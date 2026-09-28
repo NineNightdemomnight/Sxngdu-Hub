@@ -11,7 +11,7 @@ local games = {
 	},
 
 	-- เกมอื่น ๆ (ถ้าต้องการใช้)
-	[3730079862] = {
+	[10165583746] = {
 		name = "Examination",
 		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/Examination.lua"
 	},
