@@ -11,9 +11,9 @@ local games = {
 	},
 
 	-- เกมอื่น ๆ (ถ้าต้องการใช้)
-	[7211666966] = {
-		name = "Tower Of Jump",
-		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/TOJ"
+	[3730079862] = {
+		name = "Examination",
+		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/Examination.lua"
 	},
 	[89469502395769] = {
 		name = "Kick a Lucky Block",
