@@ -17,7 +17,7 @@ local games = {
 	},
 	[17516596118] = {
 		name = "Hypershot",
-		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/KALB"
+		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/Hypershot.lua"
 	},
 	[5496455308] = {
 		name = "Tower FL",
