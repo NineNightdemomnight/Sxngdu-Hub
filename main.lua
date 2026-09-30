@@ -87,8 +87,8 @@ local games = {
 		name = "Escape Tsunami For Brainrots - Arena",
 		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub1/refs/heads/main/flick1"
 	},
-	[137629155365661] = {
-		name = "Escape Tsunami For Brainrots!",
+	[127700522282133] = {
+		name = "SxngduHub",
 		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
 	},
 }
