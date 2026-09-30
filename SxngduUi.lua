@@ -1,7 +1,7 @@
 --[[
 	Sxngdu UI Library
-	Dashboard Style (inspired layout) + Cyberpunk Blue
-	Close icon asset + Credits page + Draggable logo minimize
+	Dashboard Style + Cyberpunk Blue
+	+ Scrollable Tabs + Edge Resize
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -11,10 +11,9 @@ local Stats = game:GetService("Stats")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local LOGO_ID   = "rbxassetid://116342011761764"
-local CLOSE_ID  = "rbxassetid://76173586881356"
+local LOGO_ID  = "rbxassetid://116342011761764"
+local CLOSE_ID = "rbxassetid://76173586881356"
 
--- ==================== Theme ====================
 local Theme = {
 	Bg          = Color3.fromRGB(8, 12, 22),
 	BgPanel     = Color3.fromRGB(12, 18, 32),
@@ -78,7 +77,6 @@ local function makeLabel(parent, text, size, pos, color, font, textSize, align)
 	return l
 end
 
--- ==================== Library ====================
 local Library = {}
 Library.__index = Library
 
@@ -88,8 +86,12 @@ function Library.new(config)
 	self.Tabs = {}
 	self.CurrentTab = nil
 	self.Minimized = false
-	self.Width = config.Width or 720
-	self.Height = config.Height or 460
+	self.Width = config.Width or 760
+	self.Height = config.Height or 480
+	self.MinWidth = config.MinWidth or 560
+	self.MinHeight = config.MinHeight or 360
+	self.MaxWidth = config.MaxWidth or 1200
+	self.MaxHeight = config.MaxHeight or 800
 
 	self.Gui = Instance.new("ScreenGui")
 	self.Gui.Name = "SxngduLib_" .. tostring(math.random(10000, 99999))
@@ -110,7 +112,6 @@ function Library.new(config)
 	addCorner(self.Window, 16)
 	addStroke(self.Window, Theme.Accent, 1.2, 0.4)
 
-	-- Top glow line
 	local topLine = Instance.new("Frame")
 	topLine.Size = UDim2.new(1, 0, 0, 2)
 	topLine.BackgroundColor3 = Theme.Accent
@@ -126,22 +127,20 @@ function Library.new(config)
 
 	-- ========== LEFT SIDEBAR ==========
 	local sidebar = Instance.new("Frame")
+	sidebar.Name = "Sidebar"
 	sidebar.Size = UDim2.new(0, 200, 1, -2)
 	sidebar.Position = UDim2.new(0, 0, 0, 2)
 	sidebar.BackgroundColor3 = Theme.Sidebar
 	sidebar.BorderSizePixel = 0
 	sidebar.Parent = self.Window
 
-	-- User header
 	local userHeader = Instance.new("Frame")
 	userHeader.Size = UDim2.new(1, -16, 0, 28)
 	userHeader.Position = UDim2.new(0, 8, 0, 12)
 	userHeader.BackgroundTransparency = 1
 	userHeader.Parent = sidebar
-
 	makeLabel(userHeader, "👤  User Info", UDim2.new(1, 0, 1, 0), nil, Theme.TextDim, Enum.Font.GothamMedium, 12)
 
-	-- Avatar circle
 	local avatarFrame = Instance.new("Frame")
 	avatarFrame.Size = UDim2.new(0, 64, 0, 64)
 	avatarFrame.Position = UDim2.new(0.5, -32, 0, 48)
@@ -155,11 +154,12 @@ function Library.new(config)
 	avatar.Size = UDim2.new(1, -4, 1, -4)
 	avatar.Position = UDim2.new(0, 2, 0, 2)
 	avatar.BackgroundTransparency = 1
-	avatar.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+	pcall(function()
+		avatar.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+	end)
 	avatar.Parent = avatarFrame
 	addCorner(avatar, 30)
 
-	-- Online dot
 	local dot = Instance.new("Frame")
 	dot.Size = UDim2.new(0, 12, 0, 12)
 	dot.Position = UDim2.new(1, -14, 1, -14)
@@ -169,11 +169,9 @@ function Library.new(config)
 	addCorner(dot, 6)
 	addStroke(dot, Theme.Bg, 2, 0)
 
-	-- Name
 	makeLabel(sidebar, LocalPlayer.DisplayName, UDim2.new(1, -16, 0, 20), UDim2.new(0, 8, 0, 120), Theme.Text, Enum.Font.GothamBold, 14, Enum.TextXAlignment.Center)
 	makeLabel(sidebar, "@" .. LocalPlayer.Name, UDim2.new(1, -16, 0, 16), UDim2.new(0, 8, 0, 140), Theme.TextDim, Enum.Font.Gotham, 11, Enum.TextXAlignment.Center)
 
-	-- Info rows
 	local function infoRow(y, icon, label, value)
 		local row = Instance.new("Frame")
 		row.Size = UDim2.new(1, -20, 0, 22)
@@ -189,27 +187,23 @@ function Library.new(config)
 	pcall(function()
 		if identifyexecutor then executorName = identifyexecutor() end
 	end)
-
 	infoRow(170, "💻", "Executor", executorName)
 	infoRow(194, "🖥", "Device", UserInputService.TouchEnabled and "Mobile" or "PC")
 	infoRow(218, "🎮", "Game", (function()
-		local ok, name = pcall(function()
+		local ok2, name = pcall(function()
 			return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
 		end)
-		return ok and string.sub(name, 1, 12) or tostring(game.PlaceId)
+		return ok2 and string.sub(name, 1, 12) or tostring(game.PlaceId)
 	end)())
 
 	local pingLabel = infoRow(242, "📶", "Ping", "- ms")
 	local sessionLabel = infoRow(266, "⏱", "Session", "00:00")
 
-	-- Session + Ping updater
 	local sessionStart = os.clock()
 	task.spawn(function()
 		while self.Gui and self.Gui.Parent do
 			local sec = math.floor(os.clock() - sessionStart)
-			local m = math.floor(sec / 60)
-			local s = sec % 60
-			sessionLabel.Text = string.format("%02d:%02d", m, s)
+			sessionLabel.Text = string.format("%02d:%02d", math.floor(sec / 60), sec % 60)
 			local ping = 0
 			pcall(function()
 				ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
@@ -220,7 +214,6 @@ function Library.new(config)
 		end
 	end)
 
-	-- Status
 	local statusFrame = Instance.new("Frame")
 	statusFrame.Size = UDim2.new(1, -20, 0, 36)
 	statusFrame.Position = UDim2.new(0, 10, 1, -50)
@@ -237,17 +230,16 @@ function Library.new(config)
 	statusDot.BorderSizePixel = 0
 	statusDot.Parent = statusFrame
 	addCorner(statusDot, 4)
-
 	makeLabel(statusFrame, "Connected to Sxngdu", UDim2.new(1, -28, 1, 0), UDim2.new(0, 24, 0, 0), Theme.Green, Enum.Font.GothamMedium, 11)
 
 	-- ========== RIGHT AREA ==========
 	local right = Instance.new("Frame")
+	right.Name = "Right"
 	right.Size = UDim2.new(1, -210, 1, -2)
 	right.Position = UDim2.new(0, 205, 0, 2)
 	right.BackgroundTransparency = 1
 	right.Parent = self.Window
 
-	-- Title bar (right)
 	local titleBar = Instance.new("Frame")
 	titleBar.Size = UDim2.new(1, 0, 0, 44)
 	titleBar.BackgroundTransparency = 1
@@ -260,10 +252,8 @@ function Library.new(config)
 	logoSmall.Image = LOGO_ID
 	logoSmall.ScaleType = Enum.ScaleType.Fit
 	logoSmall.Parent = titleBar
+	makeLabel(titleBar, self.Name, UDim2.new(0.55, 0, 1, 0), UDim2.new(0, 40, 0, 0), Theme.Text, Enum.Font.GothamBold, 15)
 
-	makeLabel(titleBar, self.Name, UDim2.new(0.6, 0, 1, 0), UDim2.new(0, 40, 0, 0), Theme.Text, Enum.Font.GothamBold, 16)
-
-	-- Minimize
 	local minBtn = Instance.new("TextButton")
 	minBtn.Size = UDim2.new(0, 30, 0, 30)
 	minBtn.Position = UDim2.new(1, -72, 0.5, -15)
@@ -279,7 +269,6 @@ function Library.new(config)
 	minBtn.MouseEnter:Connect(function() tween(minBtn, {BackgroundColor3 = Theme.BgHover}) end)
 	minBtn.MouseLeave:Connect(function() tween(minBtn, {BackgroundColor3 = Theme.BgCard}) end)
 
-	-- Close (image)
 	local close = Instance.new("ImageButton")
 	close.Size = UDim2.new(0, 30, 0, 30)
 	close.Position = UDim2.new(1, -36, 0.5, -15)
@@ -290,36 +279,125 @@ function Library.new(config)
 	close.Parent = titleBar
 	addCorner(close, 8)
 	addStroke(close, Color3.fromRGB(255, 80, 100), 1, 0.5)
-	local closePad = Instance.new("UIPadding")
-	closePad.PaddingTop = UDim.new(0, 5)
-	closePad.PaddingBottom = UDim.new(0, 5)
-	closePad.PaddingLeft = UDim.new(0, 5)
-	closePad.PaddingRight = UDim.new(0, 5)
-	closePad.Parent = close
+	addPadding(close, 5, 5, 5, 5)
 	close.MouseEnter:Connect(function() tween(close, {BackgroundColor3 = Color3.fromRGB(50, 20, 30)}) end)
 	close.MouseLeave:Connect(function() tween(close, {BackgroundColor3 = Theme.BgCard}) end)
 	close.MouseButton1Click:Connect(function()
 		self.Gui.Enabled = false
 	end)
 
-	-- Tab bar
-	self.TabBar = Instance.new("Frame")
-	self.TabBar.Size = UDim2.new(1, -16, 0, 32)
+	-- Tab bar (ScrollingFrame เพื่อแท็บเยอะไม่ล้น)
+	self.TabBar = Instance.new("ScrollingFrame")
+	self.TabBar.Name = "TabBar"
+	self.TabBar.Size = UDim2.new(1, -16, 0, 34)
 	self.TabBar.Position = UDim2.new(0, 8, 0, 48)
 	self.TabBar.BackgroundTransparency = 1
+	self.TabBar.BorderSizePixel = 0
+	self.TabBar.ScrollBarThickness = 2
+	self.TabBar.ScrollBarImageColor3 = Theme.Accent
+	self.TabBar.ScrollingDirection = Enum.ScrollingDirection.X
+	self.TabBar.CanvasSize = UDim2.new(0, 0, 0, 0)
 	self.TabBar.Parent = right
 
 	local tabLayout = Instance.new("UIListLayout")
 	tabLayout.FillDirection = Enum.FillDirection.Horizontal
 	tabLayout.Padding = UDim.new(0, 6)
+	tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	tabLayout.Parent = self.TabBar
 
-	-- Content
+	tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		self.TabBar.CanvasSize = UDim2.new(0, tabLayout.AbsoluteContentSize.X + 8, 0, 0)
+	end)
+
 	self.Content = Instance.new("Frame")
+	self.Content.Name = "Content"
 	self.Content.Size = UDim2.new(1, -16, 1, -96)
 	self.Content.Position = UDim2.new(0, 8, 0, 86)
 	self.Content.BackgroundTransparency = 1
 	self.Content.Parent = right
+
+	-- ========== Resize Handles ==========
+	local function makeResizeHandle(size, pos, cursor, edges)
+		local h = Instance.new("TextButton")
+		h.Size = size
+		h.Position = pos
+		h.BackgroundTransparency = 1
+		h.Text = ""
+		h.ZIndex = 50
+		h.Parent = self.Window
+
+		local resizing = false
+		local startMouse, startSize, startPos
+
+		h.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				resizing = true
+				self.Window.Draggable = false
+				startMouse = UserInputService:GetMouseLocation()
+				startSize = self.Window.AbsoluteSize
+				startPos = self.Window.AbsolutePosition
+			end
+		end)
+
+		UserInputService.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 and resizing then
+				resizing = false
+				self.Window.Draggable = true
+			end
+		end)
+
+		UserInputService.InputChanged:Connect(function(input)
+			if not resizing or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+			local mouse = UserInputService:GetMouseLocation()
+			local dx = mouse.X - startMouse.X
+			local dy = mouse.Y - startMouse.Y
+
+			local newW = startSize.X
+			local newH = startSize.Y
+			local newX = startPos.X
+			local newY = startPos.Y
+
+			if edges.Right then
+				newW = math.clamp(startSize.X + dx, self.MinWidth, self.MaxWidth)
+			end
+			if edges.Bottom then
+				newH = math.clamp(startSize.Y + dy, self.MinHeight, self.MaxHeight)
+			end
+			if edges.Left then
+				newW = math.clamp(startSize.X - dx, self.MinWidth, self.MaxWidth)
+				newX = startPos.X + (startSize.X - newW)
+			end
+			if edges.Top then
+				newH = math.clamp(startSize.Y - dy, self.MinHeight, self.MaxHeight)
+				newY = startPos.Y + (startSize.Y - newH)
+			end
+
+			self.Window.Size = UDim2.new(0, newW, 0, newH)
+			self.Window.Position = UDim2.new(0, newX, 0, newY)
+			self.Width = newW
+			self.Height = newH
+		end)
+
+		return h
+	end
+
+	-- ขอบขวา / ล่าง / มุมขวาล่าง (ใช้บ่อยสุด)
+	makeResizeHandle(UDim2.new(0, 8, 1, -16), UDim2.new(1, -8, 0, 8), "Right", {Right = true})
+	makeResizeHandle(UDim2.new(1, -16, 0, 8), UDim2.new(0, 8, 1, -8), "Bottom", {Bottom = true})
+	makeResizeHandle(UDim2.new(0, 14, 0, 14), UDim2.new(1, -14, 1, -14), "Corner", {Right = true, Bottom = true})
+	makeResizeHandle(UDim2.new(0, 8, 1, -16), UDim2.new(0, 0, 0, 8), "Left", {Left = true})
+	makeResizeHandle(UDim2.new(1, -16, 0, 8), UDim2.new(0, 8, 0, 0), "Top", {Top = true})
+
+	-- จุดมุมขวาล่าง (มองเห็นเล็กน้อย)
+	local cornerDot = Instance.new("Frame")
+	cornerDot.Size = UDim2.new(0, 10, 0, 10)
+	cornerDot.Position = UDim2.new(1, -12, 1, -12)
+	cornerDot.BackgroundColor3 = Theme.Accent
+	cornerDot.BackgroundTransparency = 0.4
+	cornerDot.BorderSizePixel = 0
+	cornerDot.ZIndex = 51
+	cornerDot.Parent = self.Window
+	addCorner(cornerDot, 2)
 
 	-- ========== Floating Logo ==========
 	self.FloatIcon = Instance.new("ImageButton")
@@ -335,26 +413,26 @@ function Library.new(config)
 	addStroke(self.FloatIcon, Theme.Accent, 1.5, 0.25)
 	addPadding(self.FloatIcon, 4, 4, 4, 4)
 
-	local dragging, dragStart, startPos, moved = false, nil, nil, false
+	local fDragging, fStart, fPos, fMoved = false, nil, nil, false
 	self.FloatIcon.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			moved = false
-			dragStart = input.Position
-			startPos = self.FloatIcon.Position
+			fDragging = true
+			fMoved = false
+			fStart = input.Position
+			fPos = self.FloatIcon.Position
 		end
 	end)
 	UserInputService.InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart
-			if delta.Magnitude > 4 then moved = true end
-			self.FloatIcon.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		if fDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - fStart
+			if delta.Magnitude > 4 then fMoved = true end
+			self.FloatIcon.Position = UDim2.new(fPos.X.Scale, fPos.X.Offset + delta.X, fPos.Y.Scale, fPos.Y.Offset + delta.Y)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			if dragging and not moved then self:Restore() end
-			dragging = false
+			if fDragging and not fMoved then self:Restore() end
+			fDragging = false
 		end
 	end)
 	self.FloatIcon.MouseEnter:Connect(function() tween(self.FloatIcon, {Size = UDim2.new(0, 62, 0, 62)}, 0.15) end)
@@ -381,11 +459,10 @@ function Library.new(config)
 		end
 	end)
 
-	-- ========== Built-in Home + Credits tabs ==========
+	-- Home + Credits
 	local homeTab = self:CreateTab("Home")
 	local creditsTab = self:CreateTab("Credits")
 
-	-- HOME PAGE (dashboard style)
 	local homeCard = Instance.new("Frame")
 	homeCard.Size = UDim2.new(1, -4, 0, 120)
 	homeCard.BackgroundColor3 = Theme.BgCard
@@ -401,7 +478,6 @@ function Library.new(config)
 	homeLogo.Image = LOGO_ID
 	homeLogo.ScaleType = Enum.ScaleType.Fit
 	homeLogo.Parent = homeCard
-
 	makeLabel(homeCard, "SXNGDU HUB", UDim2.new(1, -80, 0, 24), UDim2.new(0, 76, 0, 28), Theme.Accent, Enum.Font.GothamBold, 18)
 	makeLabel(homeCard, "Secure script loader  •  Ready", UDim2.new(1, -80, 0, 18), UDim2.new(0, 76, 0, 54), Theme.TextDim, Enum.Font.Gotham, 12)
 	makeLabel(homeCard, "ACTIVE", UDim2.new(0, 60, 0, 18), UDim2.new(1, -76, 0, 14), Theme.Green, Enum.Font.GothamBold, 11, Enum.TextXAlignment.Right)
@@ -414,14 +490,12 @@ function Library.new(config)
 	self:CreateButton(homeTab, "📋  คัดลอก HWID", function()
 		local hwid = "N/A"
 		pcall(function()
-			if gethwid then hwid = gethwid()
-			elseif gethwidid then hwid = getid() end
+			if gethwid then hwid = gethwid() end
 		end)
 		if setclipboard then setclipboard(tostring(hwid)) end
 		self:Notify("HWID", "คัดลอกแล้ว", 2)
 	end)
 
-	-- CREDITS PAGE
 	self:CreateLabel(creditsTab, "DEVELOPER")
 	local credCard = Instance.new("Frame")
 	credCard.Size = UDim2.new(1, -4, 0, 90)
@@ -438,7 +512,6 @@ function Library.new(config)
 	credLogo.Image = LOGO_ID
 	credLogo.ScaleType = Enum.ScaleType.Fit
 	credLogo.Parent = credCard
-
 	makeLabel(credCard, "sxngdu", UDim2.new(1, -80, 0, 22), UDim2.new(0, 74, 0, 22), Theme.Text, Enum.Font.GothamBold, 16)
 	makeLabel(credCard, "Main Developer  •  UI & Scripts", UDim2.new(1, -80, 0, 18), UDim2.new(0, 74, 0, 46), Theme.TextDim, Enum.Font.Gotham, 12)
 
@@ -446,7 +519,6 @@ function Library.new(config)
 	self:CreateLabel(creditsTab, "ABOUT")
 	self:CreateLabel(creditsTab, "Sxngdu Hub — Cyberpunk Blue Edition")
 	self:CreateLabel(creditsTab, "Made for Ride A Pet & more")
-	self:CreateLabel(creditsTab, "")
 	self:CreateButton(creditsTab, "💬  Discord (soon)", function()
 		self:Notify("Discord", "กำลังเปิดเร็ว ๆ นี้", 2)
 	end)
@@ -474,9 +546,10 @@ function Library:CreateTab(name)
 	end)
 
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 88, 0, 28)
+	btn.Size = UDim2.new(0, 0, 0, 28)
+	btn.AutomaticSize = Enum.AutomaticSize.X
 	btn.BackgroundColor3 = Theme.BgCard
-	btn.Text = name
+	btn.Text = "  " .. name .. "  "
 	btn.TextColor3 = Theme.TextDim
 	btn.Font = Enum.Font.GothamMedium
 	btn.TextSize = 12
@@ -526,7 +599,6 @@ function Library:CreateToggle(tab, text, default, callback)
 	frame.Parent = tab.Frame
 	addCorner(frame, 9)
 	addStroke(frame, Theme.Stroke, 1, 0.75)
-
 	makeLabel(frame, text, UDim2.new(0.72, 0, 1, 0), UDim2.new(0, 12, 0, 0), Theme.Text, Enum.Font.Gotham, 13)
 
 	local state = default == true
@@ -669,7 +741,6 @@ function Library:Notify(title, text, duration)
 	bar.BorderSizePixel = 0
 	bar.Parent = n
 	addCorner(bar, 2)
-
 	makeLabel(n, title, UDim2.new(1, -24, 0, 20), UDim2.new(0, 16, 0, 8), Theme.Accent, Enum.Font.GothamBold, 13)
 	makeLabel(n, text, UDim2.new(1, -24, 0, 20), UDim2.new(0, 16, 0, 30), Theme.Text, Enum.Font.Gotham, 12)
 
