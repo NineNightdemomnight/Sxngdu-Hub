@@ -89,7 +89,7 @@ local games = {
 	},
 	[127700522282133] = {
 		name = "SxngduHub",
-		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/etfb"
+		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/testui.lua"
 	},
 }
 
