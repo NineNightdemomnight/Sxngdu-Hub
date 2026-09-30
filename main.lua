@@ -7,7 +7,7 @@ local games = {
 	-- Ride a Pet (หลัก)
 	[124216119978534] = {
 		name = "Ride a Pet",
-		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/obf_lOAJD1o0Qk3Sq0KmS13qY5SSX4v4Xu2479R5J7Mqce3evxiFLLo7WPXnfm2jqN2R.lua"
+		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/obf_38LJt4zGs5gXI92WvLiqHv3SpqnqI3Kzx5wbrzRD4xGFF00Qk8JXuTR8z8rw6nty.lua"
 	},
 
 	-- เกมอื่น ๆ (ถ้าต้องการใช้)
