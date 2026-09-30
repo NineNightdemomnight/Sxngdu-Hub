@@ -21,7 +21,7 @@ local games = {
 	},
 	[117533937949084] = {
 		name = "Iron Soul",
-		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/TowerFL"
+		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/IronSoul.lua"
 	},
 	[134208374070897] = {
 		name = "Monochrome",
