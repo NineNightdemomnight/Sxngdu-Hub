@@ -1,7 +1,7 @@
 --[[
 	Sxngdu UI Library
 	Cyberpunk Blue / Cyan Theme
-	ใช้ซ้ำได้หลายเกม
+	+ Logo Minimize Icon (draggable)
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -10,13 +10,15 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+local LOGO_ID = "rbxassetid://116342011761764"
+
 -- ==================== Theme ====================
 local Theme = {
 	Bg          = Color3.fromRGB(10, 14, 24),
 	BgPanel     = Color3.fromRGB(14, 20, 36),
 	BgCard      = Color3.fromRGB(18, 26, 46),
 	BgHover     = Color3.fromRGB(24, 36, 60),
-	Accent      = Color3.fromRGB(0, 200, 255),      -- cyan
+	Accent      = Color3.fromRGB(0, 200, 255),
 	AccentDim   = Color3.fromRGB(0, 120, 180),
 	AccentGlow  = Color3.fromRGB(80, 220, 255),
 	Text        = Color3.fromRGB(230, 240, 255),
@@ -68,6 +70,7 @@ function Library.new(config)
 	self.Name = config.Name or "Sxngdu Hub"
 	self.Tabs = {}
 	self.CurrentTab = nil
+	self.Minimized = false
 
 	self.Gui = Instance.new("ScreenGui")
 	self.Gui.Name = "SxngduLib_" .. tostring(math.random(10000, 99999))
@@ -75,7 +78,7 @@ function Library.new(config)
 	self.Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	self.Gui.Parent = PlayerGui
 
-	-- Main Window
+	-- ========== Main Window ==========
 	self.Window = Instance.new("Frame")
 	self.Window.Size = UDim2.new(0, config.Width or 520, 0, config.Height or 400)
 	self.Window.Position = UDim2.new(0.5, -(config.Width or 520)/2, 0.5, -(config.Height or 400)/2)
@@ -109,18 +112,18 @@ function Library.new(config)
 	titleBar.BorderSizePixel = 0
 	titleBar.Parent = self.Window
 
-	-- Accent bar left
-	local accentBar = Instance.new("Frame")
-	accentBar.Size = UDim2.new(0, 3, 0, 22)
-	accentBar.Position = UDim2.new(0, 10, 0.5, -11)
-	accentBar.BackgroundColor3 = Theme.Accent
-	accentBar.BorderSizePixel = 0
-	accentBar.Parent = titleBar
-	addCorner(accentBar, 2)
+	-- Logo in title
+	local logoTitle = Instance.new("ImageLabel")
+	logoTitle.Size = UDim2.new(0, 28, 0, 28)
+	logoTitle.Position = UDim2.new(0, 10, 0.5, -14)
+	logoTitle.BackgroundTransparency = 1
+	logoTitle.Image = LOGO_ID
+	logoTitle.ScaleType = Enum.ScaleType.Fit
+	logoTitle.Parent = titleBar
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -70, 1, 0)
-	title.Position = UDim2.new(0, 20, 0, 0)
+	title.Size = UDim2.new(1, -110, 1, 0)
+	title.Position = UDim2.new(0, 44, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Text = self.Name
 	title.TextColor3 = Theme.Text
@@ -128,6 +131,27 @@ function Library.new(config)
 	title.TextSize = 15
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = titleBar
+
+	-- Minimize button
+	local minBtn = Instance.new("TextButton")
+	minBtn.Size = UDim2.new(0, 28, 0, 28)
+	minBtn.Position = UDim2.new(1, -70, 0.5, -14)
+	minBtn.BackgroundColor3 = Color3.fromRGB(20, 30, 50)
+	minBtn.Text = "–"
+	minBtn.TextColor3 = Theme.Accent
+	minBtn.Font = Enum.Font.GothamBold
+	minBtn.TextSize = 18
+	minBtn.AutoButtonColor = false
+	minBtn.Parent = titleBar
+	addCorner(minBtn, 7)
+	addStroke(minBtn, Theme.Accent, 1, 0.5)
+
+	minBtn.MouseEnter:Connect(function()
+		tween(minBtn, {BackgroundColor3 = Color3.fromRGB(30, 50, 80)})
+	end)
+	minBtn.MouseLeave:Connect(function()
+		tween(minBtn, {BackgroundColor3 = Color3.fromRGB(20, 30, 50)})
+	end)
 
 	-- Close button
 	local close = Instance.new("TextButton")
@@ -184,10 +208,99 @@ function Library.new(config)
 	footer.TextXAlignment = Enum.TextXAlignment.Right
 	footer.Parent = self.Window
 
+	-- ========== Floating Logo Icon (เมื่อพับ) ==========
+	self.FloatIcon = Instance.new("ImageButton")
+	self.FloatIcon.Size = UDim2.new(0, 56, 0, 56)
+	self.FloatIcon.Position = UDim2.new(0, 20, 0.5, -28)
+	self.FloatIcon.BackgroundColor3 = Theme.BgPanel
+	self.FloatIcon.Image = LOGO_ID
+	self.FloatIcon.ScaleType = Enum.ScaleType.Fit
+	self.FloatIcon.AutoButtonColor = false
+	self.FloatIcon.Visible = false
+	self.FloatIcon.Parent = self.Gui
+	addCorner(self.FloatIcon, 14)
+	addStroke(self.FloatIcon, Theme.Accent, 1.5, 0.25)
+
+	-- เงาเล็กน้อย
+	local iconPad = Instance.new("UIPadding")
+	iconPad.PaddingTop = UDim.new(0, 4)
+	iconPad.PaddingBottom = UDim.new(0, 4)
+	iconPad.PaddingLeft = UDim.new(0, 4)
+	iconPad.PaddingRight = UDim.new(0, 4)
+	iconPad.Parent = self.FloatIcon
+
+	-- Drag floating icon
+	local dragging = false
+	local dragStart, startPos
+	local moved = false
+
+	self.FloatIcon.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			moved = false
+			dragStart = input.Position
+			startPos = self.FloatIcon.Position
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			if delta.Magnitude > 4 then moved = true end
+			self.FloatIcon.Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			if dragging and not moved then
+				-- คลิกสั้น ๆ = เปิด UI
+				self:Restore()
+			end
+			dragging = false
+		end
+	end)
+
+	-- Hover effect
+	self.FloatIcon.MouseEnter:Connect(function()
+		tween(self.FloatIcon, {Size = UDim2.new(0, 62, 0, 62)}, 0.15)
+	end)
+	self.FloatIcon.MouseLeave:Connect(function()
+		tween(self.FloatIcon, {Size = UDim2.new(0, 56, 0, 56)}, 0.15)
+	end)
+
+	-- Minimize / Restore
+	function self:Minimize()
+		self.Minimized = true
+		self.Window.Visible = false
+		self.FloatIcon.Visible = true
+	end
+
+	function self:Restore()
+		self.Minimized = false
+		self.FloatIcon.Visible = false
+		self.Window.Visible = true
+	end
+
+	minBtn.MouseButton1Click:Connect(function()
+		self:Minimize()
+	end)
+
+	-- RightShift toggle
 	UserInputService.InputBegan:Connect(function(input, gp)
 		if gp then return end
 		if input.KeyCode == (config.ToggleKey or Enum.KeyCode.RightShift) then
-			self.Gui.Enabled = not self.Gui.Enabled
+			if self.Minimized then
+				self:Restore()
+			elseif self.Window.Visible then
+				self:Minimize()
+			else
+				self.Gui.Enabled = true
+				self:Restore()
+			end
 		end
 	end)
 
@@ -217,7 +330,6 @@ function Library:CreateTab(name)
 		tab.Frame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
 	end)
 
-	-- Tab button
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 100, 0, 30)
 	btn.BackgroundColor3 = Theme.BgCard
