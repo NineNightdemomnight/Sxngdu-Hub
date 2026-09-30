@@ -15,8 +15,8 @@ local games = {
 		name = "Examination",
 		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/Examination.lua"
 	},
-	[89469502395769] = {
-		name = "Kick a Lucky Block",
+	[17516596118] = {
+		name = "Hypershot",
 		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/KALB"
 	},
 	[5496455308] = {
