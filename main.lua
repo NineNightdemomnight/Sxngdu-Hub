@@ -19,8 +19,8 @@ local games = {
 		name = "Hypershot",
 		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/Hypershot.lua"
 	},
-	[5496455308] = {
-		name = "Tower FL",
+	[117533937949084] = {
+		name = "Iron Soul",
 		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/TowerFL"
 	},
 	[134208374070897] = {
