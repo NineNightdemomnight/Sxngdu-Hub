@@ -23,8 +23,8 @@ local games = {
 		name = "Iron Soul",
 		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/IronSoul.lua"
 	},
-	[134208374070897] = {
-		name = "Monochrome",
+	[135187059974536] = {
+		name = "WarZPVP",
 		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/Monochrome"
 	},
 	[138381251771774] = {
