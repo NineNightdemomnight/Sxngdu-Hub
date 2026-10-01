@@ -25,7 +25,7 @@ local games = {
 	},
 	[135187059974536] = {
 		name = "WarZPVP",
-		url = "https://raw.githubusercontent.com/ummarxfarooq/mystrix-hub/refs/heads/main/Monochrome"
+		url = "https://raw.githubusercontent.com/NineNightdemomnight/Sxngdu-Hub/refs/heads/main/WarZPVP.lua"
 	},
 	[138381251771774] = {
 		name = "Drain the Lake",
