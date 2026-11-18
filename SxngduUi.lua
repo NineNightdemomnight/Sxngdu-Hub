@@ -13,7 +13,7 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local LOGO_ID  = "rbxassetid://116342011761764"
-local CLOSE_ID = "rbxassetid://76173586881356"
+local CLOSE_ID = "rbxassetid://107840042764581"
 local HAS_TOUCH = UserInputService.TouchEnabled
 
 -- ==================== Theme ====================
