@@ -17,7 +17,7 @@ local CLOSE_ID = "rbxassetid://107840042764581"
 
 -- อัปโหลดไฟล์ BG ไปที่ Roblox Creator Dashboard แล้วใส่ Image Asset ID ตรงนี้
 -- ตัวอย่าง: "rbxassetid://123456789012345"
-local BACKGROUND_ID = "rbxassetid://86630103402945"
+local BACKGROUND_ID = "rbxassetid://92604901792628"
 local HAS_TOUCH = UserInputService.TouchEnabled
 
 -- ==================== Theme ====================
