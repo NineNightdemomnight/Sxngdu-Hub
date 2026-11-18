@@ -136,7 +136,8 @@ function Library.new(config)
 	self.CurrentTab = nil
 	self.Minimized = false
 	self.MouseUnlocked = true
-	-- ขนาดออกแบบภายใน (logical size) และสเกลแสดงผลให้เท่าตัวอย่างรูปที่ 2
+	-- ขนาดเริ่มต้นคืนตามภาพตัวอย่างที่ 2: ประมาณ 406 x 229 px
+	-- ใช้ logical size 780 x 440 และ UIScale 0.52 (780*0.52 x 440*0.52)
 	self.Width = config.Width or 780
 	self.Height = config.Height or 440
 	self.Scale = config.Scale or 0.52
