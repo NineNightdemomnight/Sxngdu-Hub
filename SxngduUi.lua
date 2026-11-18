@@ -135,7 +135,8 @@ local function addFrost(parent, transparency)
 	frost.BackgroundColor3 = Color3.fromRGB(180, 220, 255)
 	frost.BackgroundTransparency = transparency or 0.92
 	frost.BorderSizePixel = 0
-	frost.ZIndex = (parent.ZIndex or 1)
+	frost.ZIndex = 3
+	frost.Active = false
 	frost.Parent = parent
 	addCorner(frost, 18)
 	return frost
@@ -193,7 +194,8 @@ function Library.new(config)
 	background.Image = config.BackgroundImage or BACKGROUND_ID
 	background.ScaleType = Enum.ScaleType.Stretch
 	background.ImageTransparency = math.clamp(config.BackgroundTransparency or 0, 0, 1)
-	background.ZIndex = 10
+	background.ZIndex = 1
+	background.Active = false
 	background.Parent = self.Window
 	self.Background = background
 	local backgroundShade = Instance.new("Frame")
@@ -202,13 +204,19 @@ function Library.new(config)
 	backgroundShade.BackgroundColor3 = Color3.fromRGB(3, 7, 16)
 	backgroundShade.BackgroundTransparency = math.clamp(config.BackgroundShadeTransparency or 0.70, 0, 1)
 	backgroundShade.BorderSizePixel = 0
-	backgroundShade.ZIndex = 11
+	backgroundShade.ZIndex = 2
+	backgroundShade.Active = false
 	backgroundShade.Parent = self.Window
 	self.BackgroundShade = backgroundShade
 
 	addCorner(self.Window, 20)
 	addStroke(self.Window, Theme.Accent, 1.5, 0.4)
-	addFrost(self.Window, 0.94)
+	-- frost บาง ๆ อยู่ใต้ UI เท่านั้น
+	local frost = addFrost(self.Window, 0.96)
+	if frost then
+		frost.ZIndex = 3
+		frost.Active = false
+	end
 
 	-- top accent glass bar
 	local glow = Instance.new("Frame")
@@ -216,7 +224,7 @@ function Library.new(config)
 	glow.BackgroundColor3 = Theme.Accent
 	glow.BackgroundTransparency = 0.15
 	glow.BorderSizePixel = 0
-	glow.ZIndex = 20
+	glow.ZIndex = 25
 	glow.Parent = self.Window
 	local glowGrad = Instance.new("UIGradient")
 	glowGrad.Color = ColorSequence.new({
@@ -234,6 +242,7 @@ function Library.new(config)
 	sidebar.BackgroundColor3 = Theme.Sidebar
 	sidebar.BackgroundTransparency = Theme.SidebarT
 	sidebar.BorderSizePixel = 0
+	sidebar.ZIndex = 20
 	sidebar.Parent = self.Window
 
 	local sideLine = Instance.new("Frame")
@@ -380,6 +389,7 @@ function Library.new(config)
 	right.Size = UDim2.new(1, -218, 1, -3)
 	right.Position = UDim2.new(0, 214, 0, 3)
 	right.BackgroundTransparency = 1
+	right.ZIndex = 20
 	right.Parent = self.Window
 
 	local titleBar = Instance.new("Frame")
@@ -496,7 +506,7 @@ function Library.new(config)
 		h.Position = pos
 		h.BackgroundTransparency = 1
 		h.Text = ""
-		h.ZIndex = 50
+		h.ZIndex = 60
 		h.Parent = self.Window
 		local resizing, startMouse, startSize, startPos = false, nil, nil, nil
 		h.InputBegan:Connect(function(input)
