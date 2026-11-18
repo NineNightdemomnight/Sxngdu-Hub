@@ -14,6 +14,10 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local LOGO_ID  = "rbxassetid://116342011761764"
 local CLOSE_ID = "rbxassetid://107840042764581"
+
+-- อัปโหลดไฟล์ BG ไปที่ Roblox Creator Dashboard แล้วใส่ Image Asset ID ตรงนี้
+-- ตัวอย่าง: "rbxassetid://123456789012345"
+local BACKGROUND_ID = "rbxassetid://86630103402945"
 local HAS_TOUCH = UserInputService.TouchEnabled
 
 -- ==================== Theme ====================
@@ -127,6 +131,7 @@ Library.__index = Library
 function Library.new(config)
 	local self = setmetatable({}, Library)
 	self.Name = config.Name or "Sxngdu Hub"
+	-- สามารถส่ง config.BackgroundImage = "rbxassetid://..." เพื่อเปลี่ยน BG ได้
 	self.Tabs = {}
 	self.CurrentTab = nil
 	self.Minimized = false
@@ -148,11 +153,40 @@ function Library.new(config)
 	self.Gui.Enabled = true
 	parentGui(self.Gui)
 
+	-- ==================== Fullscreen Background ====================
+	-- วาง BG ไว้หลัง UI ทั้งหมด และปรับมืดเล็กน้อยเพื่อให้อ่าน UI ง่าย
+	local background = Instance.new("ImageLabel")
+	background.Name = "SxngduBackground"
+	background.Size = UDim2.fromScale(1, 1)
+	background.Position = UDim2.fromScale(0, 0)
+	background.BackgroundTransparency = 1
+	background.BorderSizePixel = 0
+	background.Image = config.BackgroundImage or BACKGROUND_ID
+	background.ScaleType = Enum.ScaleType.Crop
+	background.ImageTransparency = 0.04
+	background.Active = false
+	background.ZIndex = 0
+	background.Parent = self.Gui
+	self.Background = background
+
+	local backgroundShade = Instance.new("Frame")
+	backgroundShade.Name = "BackgroundShade"
+	backgroundShade.Size = UDim2.fromScale(1, 1)
+	backgroundShade.Position = UDim2.fromScale(0, 0)
+	backgroundShade.BackgroundColor3 = Color3.fromRGB(3, 7, 16)
+	backgroundShade.BackgroundTransparency = 0.72
+	backgroundShade.BorderSizePixel = 0
+	backgroundShade.Active = false
+	backgroundShade.ZIndex = 1
+	backgroundShade.Parent = self.Gui
+	self.BackgroundShade = backgroundShade
+
 	-- Main window
 	self.Window = Instance.new("Frame")
 	self.Window.Size = UDim2.new(0, self.Width, 0, self.Height)
 	self.Window.Position = UDim2.new(0.5, -self.Width / 2, 0.5, -self.Height / 2)
 	self.Window.BackgroundColor3 = Theme.Bg
+	self.Window.BackgroundTransparency = 0.08 -- glass effect: lets a little BG show through
 	self.Window.BorderSizePixel = 0
 	self.Window.Active = true
 	self.Window.Draggable = false -- custom drag only
@@ -188,6 +222,7 @@ function Library.new(config)
 	sidebar.Size = UDim2.new(0, 210, 1, -3)
 	sidebar.Position = UDim2.new(0, 0, 0, 3)
 	sidebar.BackgroundColor3 = Theme.Sidebar
+	sidebar.BackgroundTransparency = 0.10
 	sidebar.BorderSizePixel = 0
 	sidebar.Parent = self.Window
 
