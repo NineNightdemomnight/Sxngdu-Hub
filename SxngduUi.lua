@@ -1,6 +1,6 @@
 --[[
 	Sxngdu UI Library v3
-	Modern Glass + Cyberpunk Cyan
+	Screenshot Match · Neon Blue Glass + Window-Fit Background
 	+ Topmost GUI + Custom Drag + Mouse Unlock + Mobile
 ]]
 
@@ -24,11 +24,11 @@ local HAS_TOUCH = UserInputService.TouchEnabled
 local Theme = {
 	Bg          = Color3.fromRGB(9, 12, 20),
 	BgPanel     = Color3.fromRGB(14, 18, 30),
-	BgCard      = Color3.fromRGB(18, 24, 40),
+	BgCard      = Color3.fromRGB(9, 19, 37),
 	BgHover     = Color3.fromRGB(28, 38, 62),
-	Sidebar     = Color3.fromRGB(11, 15, 26),
+	Sidebar     = Color3.fromRGB(5, 13, 27),
 	Accent      = Color3.fromRGB(0, 210, 255),
-	AccentDim   = Color3.fromRGB(0, 130, 190),
+	AccentDim   = Color3.fromRGB(0, 143, 198),
 	AccentGlow  = Color3.fromRGB(100, 230, 255),
 	AccentSoft  = Color3.fromRGB(0, 90, 140),
 	Text        = Color3.fromRGB(240, 246, 255),
@@ -39,7 +39,7 @@ local Theme = {
 	Green       = Color3.fromRGB(50, 230, 160),
 	Red         = Color3.fromRGB(255, 75, 100),
 	Slider      = Color3.fromRGB(0, 200, 255),
-	Glass       = Color3.fromRGB(16, 22, 38),
+	Glass       = Color3.fromRGB(7, 18, 36),
 }
 
 local function tween(obj, props, t, style)
@@ -162,7 +162,7 @@ function Library.new(config)
 	self.Window.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.Window.Position = UDim2.fromScale(0.5, 0.5)
 	self.Window.BackgroundColor3 = Theme.Bg
-	self.Window.BackgroundTransparency = 0.18 -- BG แสดงเฉพาะภายในกรอบหน้าต่าง
+	self.Window.BackgroundTransparency = 0 -- fallback base under the image
 	self.Window.BorderSizePixel = 0
 	self.Window.Active = true
 	self.Window.Draggable = false -- custom drag only
@@ -185,10 +185,10 @@ function Library.new(config)
 	background.BackgroundTransparency = 1
 	background.BorderSizePixel = 0
 	background.Image = config.BackgroundImage or BACKGROUND_ID
-	background.ScaleType = Enum.ScaleType.Crop
-	background.ImageTransparency = 0.08
+	background.ScaleType = Enum.ScaleType.Stretch -- fill the exact Window bounds
+	background.ImageTransparency = math.clamp(config.BackgroundTransparency or 0, 0, 1)
 	background.Active = false
-	background.ZIndex = 1
+	background.ZIndex = 10
 	background.Parent = self.Window
 	self.Background = background
 
@@ -197,10 +197,10 @@ function Library.new(config)
 	backgroundShade.Size = UDim2.fromScale(1, 1)
 	backgroundShade.Position = UDim2.fromScale(0, 0)
 	backgroundShade.BackgroundColor3 = Color3.fromRGB(3, 7, 16)
-	backgroundShade.BackgroundTransparency = 0.48
+	backgroundShade.BackgroundTransparency = math.clamp(config.BackgroundShadeTransparency or 0.70, 0, 1) -- visible artwork with readable UI
 	backgroundShade.BorderSizePixel = 0
 	backgroundShade.Active = false
-	backgroundShade.ZIndex = 1
+	backgroundShade.ZIndex = 11
 	backgroundShade.Parent = self.Window
 	self.BackgroundShade = backgroundShade
 
@@ -232,8 +232,9 @@ function Library.new(config)
 	sidebar.Size = UDim2.new(0, 210, 1, -3)
 	sidebar.Position = UDim2.new(0, 0, 0, 3)
 	sidebar.BackgroundColor3 = Theme.Sidebar
-	sidebar.BackgroundTransparency = 0.10
+	sidebar.BackgroundTransparency = 0.20
 	sidebar.BorderSizePixel = 0
+	sidebar.ZIndex = 12
 	sidebar.Parent = self.Window
 
 	local sideLine = Instance.new("Frame")
@@ -267,6 +268,7 @@ function Library.new(config)
 	avatarCard.Size = UDim2.new(1, -20, 0, 88)
 	avatarCard.Position = UDim2.new(0, 10, 0, 64)
 	avatarCard.BackgroundColor3 = Theme.BgCard
+	avatarCard.BackgroundTransparency = 0.24
 	avatarCard.BorderSizePixel = 0
 	avatarCard.Parent = sidebar
 	addCorner(avatarCard, 14)
@@ -354,6 +356,7 @@ function Library.new(config)
 	statusFrame.Size = UDim2.new(1, -20, 0, 34)
 	statusFrame.Position = UDim2.new(0, 10, 1, -48)
 	statusFrame.BackgroundColor3 = Theme.BgCard
+	statusFrame.BackgroundTransparency = 0.20
 	statusFrame.BorderSizePixel = 0
 	statusFrame.Parent = sidebar
 	addCorner(statusFrame, 10)
@@ -385,6 +388,7 @@ function Library.new(config)
 	right.Size = UDim2.new(1, -218, 1, -3)
 	right.Position = UDim2.new(0, 214, 0, 3)
 	right.BackgroundTransparency = 1
+	right.ZIndex = 12
 	right.Parent = self.Window
 
 	-- title bar (drag zone)
@@ -407,6 +411,7 @@ function Library.new(config)
 	minBtn.Size = UDim2.new(0, 32, 0, 32)
 	minBtn.Position = UDim2.new(1, -76, 0.5, -16)
 	minBtn.BackgroundColor3 = Theme.BgCard
+	minBtn.BackgroundTransparency = 0.18
 	minBtn.Text = "–"
 	minBtn.TextColor3 = Theme.Accent
 	minBtn.Font = Enum.Font.GothamBold
@@ -422,6 +427,7 @@ function Library.new(config)
 	close.Size = UDim2.new(0, 32, 0, 32)
 	close.Position = UDim2.new(1, -38, 0.5, -16)
 	close.BackgroundColor3 = Theme.BgCard
+	close.BackgroundTransparency = 0.18
 	close.Image = CLOSE_ID
 	close.ScaleType = Enum.ScaleType.Fit
 	close.AutoButtonColor = false
@@ -666,6 +672,7 @@ function Library.new(config)
 	local homeCard = Instance.new("Frame")
 	homeCard.Size = UDim2.new(1, -4, 0, 118)
 	homeCard.BackgroundColor3 = Theme.BgCard
+	homeCard.BackgroundTransparency = 0.24
 	homeCard.BorderSizePixel = 0
 	homeCard.Parent = homeTab.Frame
 	addCorner(homeCard, 14)
@@ -709,6 +716,7 @@ function Library.new(config)
 	local credCard = Instance.new("Frame")
 	credCard.Size = UDim2.new(1, -4, 0, 92)
 	credCard.BackgroundColor3 = Theme.BgCard
+	credCard.BackgroundTransparency = 0.24
 	credCard.BorderSizePixel = 0
 	credCard.Parent = creditsTab.Frame
 	addCorner(credCard, 14)
@@ -761,6 +769,7 @@ function Library:CreateTab(name)
 	btn.Size = UDim2.new(0, 0, 0, 30)
 	btn.AutomaticSize = Enum.AutomaticSize.X
 	btn.BackgroundColor3 = Theme.BgCard
+	btn.BackgroundTransparency = 0.24
 	btn.Text = "  " .. name .. "  "
 	btn.TextColor3 = Theme.TextDim
 	btn.Font = Enum.Font.GothamMedium
@@ -808,6 +817,7 @@ function Library:CreateToggle(tab, text, default, callback)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(1, -4, 0, 40)
 	frame.BackgroundColor3 = Theme.BgCard
+	frame.BackgroundTransparency = 0.24
 	frame.BorderSizePixel = 0
 	frame.Parent = tab.Frame
 	addCorner(frame, 11)
@@ -858,6 +868,7 @@ function Library:CreateButton(tab, text, callback)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, -4, 0, 38)
 	btn.BackgroundColor3 = Theme.AccentDim
+	btn.BackgroundTransparency = 0.02
 	btn.Text = text
 	btn.TextColor3 = Theme.Text
 	btn.Font = Enum.Font.GothamBold
@@ -889,6 +900,7 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(1, -4, 0, 56)
 	frame.BackgroundColor3 = Theme.BgCard
+	frame.BackgroundTransparency = 0.24
 	frame.BorderSizePixel = 0
 	frame.Parent = tab.Frame
 	addCorner(frame, 11)
@@ -901,6 +913,7 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	bg.Size = UDim2.new(1, -28, 0, 7)
 	bg.Position = UDim2.new(0, 14, 0, 36)
 	bg.BackgroundColor3 = Theme.ToggleOff
+	bg.BackgroundTransparency = 0.10
 	bg.BorderSizePixel = 0
 	bg.Parent = frame
 	addCorner(bg, 4)
