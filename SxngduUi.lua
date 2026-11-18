@@ -17,7 +17,7 @@ local CLOSE_ID = "rbxassetid://107840042764581"
 
 -- อัปโหลดไฟล์ BG ไปที่ Roblox Creator Dashboard แล้วใส่ Image Asset ID ตรงนี้
 -- ตัวอย่าง: "rbxassetid://123456789012345"
-local BACKGROUND_ID = "rbxassetid://92604901792628"
+local BACKGROUND_ID = "rbxassetid://107556906222294"
 local HAS_TOUCH = UserInputService.TouchEnabled
 
 -- ==================== Theme ====================
@@ -136,8 +136,10 @@ function Library.new(config)
 	self.CurrentTab = nil
 	self.Minimized = false
 	self.MouseUnlocked = true
+	-- ขนาดออกแบบภายใน (logical size) และสเกลแสดงผลให้เท่าตัวอย่างรูปที่ 2
 	self.Width = config.Width or 780
-	self.Height = config.Height or 500
+	self.Height = config.Height or 440
+	self.Scale = config.Scale or 0.52
 	self.MinWidth = config.MinWidth or 560
 	self.MinHeight = config.MinHeight or 360
 	self.MaxWidth = config.MaxWidth or 1200
@@ -157,7 +159,8 @@ function Library.new(config)
 	-- Main window
 	self.Window = Instance.new("Frame")
 	self.Window.Size = UDim2.new(0, self.Width, 0, self.Height)
-	self.Window.Position = UDim2.new(0.5, -self.Width / 2, 0.5, -self.Height / 2)
+	self.Window.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.Window.Position = UDim2.fromScale(0.5, 0.5)
 	self.Window.BackgroundColor3 = Theme.Bg
 	self.Window.BackgroundTransparency = 0.18 -- BG แสดงเฉพาะภายในกรอบหน้าต่าง
 	self.Window.BorderSizePixel = 0
@@ -167,6 +170,11 @@ function Library.new(config)
 	self.Window.ZIndex = 10
 	self.Window.Parent = self.Gui
 	addCorner(self.Window, 18)
+
+	-- ย่อทั้งหน้าต่างและองค์ประกอบด้านในพร้อมกัน ไม่ใช่ย่อเฉพาะกรอบ
+	self.WindowScale = Instance.new("UIScale")
+	self.WindowScale.Scale = self.Scale
+	self.WindowScale.Parent = self.Window
 
 	-- ==================== Window-only Background ====================
 	-- BG อยู่ภายในกรอบหน้าต่างเท่านั้น ไม่กินพื้นที่ทั้งหน้าจอ
@@ -496,14 +504,13 @@ function Library.new(config)
 		h.Text = ""
 		h.ZIndex = 50
 		h.Parent = self.Window
-		local resizing, startMouse, startSize, startPos = false, nil, nil, nil
+		local resizing, startMouse, startSize = false, nil, nil
 		h.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch then
 				resizing = true
 				startMouse = UserInputService:GetMouseLocation()
-				startSize = self.Window.AbsoluteSize
-				startPos = self.Window.AbsolutePosition
+				startSize = Vector2.new(self.Width, self.Height)
 			end
 		end)
 		UserInputService.InputEnded:Connect(function(input)
@@ -517,21 +524,15 @@ function Library.new(config)
 			if input.UserInputType ~= Enum.UserInputType.MouseMovement
 				and input.UserInputType ~= Enum.UserInputType.Touch then return end
 			local mouse = UserInputService:GetMouseLocation()
-			local dx = mouse.X - startMouse.X
-			local dy = mouse.Y - startMouse.Y
-			local newW, newH, newX, newY = startSize.X, startSize.Y, startPos.X, startPos.Y
+			-- แปลงระยะเมาส์จากพิกเซลจริงกลับเป็น logical size ก่อนปรับขนาด
+			local dx = (mouse.X - startMouse.X) / self.WindowScale.Scale
+			local dy = (mouse.Y - startMouse.Y) / self.WindowScale.Scale
+			local newW, newH = startSize.X, startSize.Y
 			if edges.Right then newW = math.clamp(startSize.X + dx, self.MinWidth, self.MaxWidth) end
+			if edges.Left then newW = math.clamp(startSize.X - dx, self.MinWidth, self.MaxWidth) end
 			if edges.Bottom then newH = math.clamp(startSize.Y + dy, self.MinHeight, self.MaxHeight) end
-			if edges.Left then
-				newW = math.clamp(startSize.X - dx, self.MinWidth, self.MaxWidth)
-				newX = startPos.X + (startSize.X - newW)
-			end
-			if edges.Top then
-				newH = math.clamp(startSize.Y - dy, self.MinHeight, self.MaxHeight)
-				newY = startPos.Y + (startSize.Y - newH)
-			end
-			self.Window.Size = UDim2.new(0, newW, 0, newH)
-			self.Window.Position = UDim2.new(0, newX, 0, newY)
+			if edges.Top then newH = math.clamp(startSize.Y - dy, self.MinHeight, self.MaxHeight) end
+			self.Window.Size = UDim2.fromOffset(newW, newH)
 			self.Width, self.Height = newW, newH
 		end)
 	end
