@@ -153,40 +153,13 @@ function Library.new(config)
 	self.Gui.Enabled = true
 	parentGui(self.Gui)
 
-	-- ==================== Fullscreen Background ====================
-	-- วาง BG ไว้หลัง UI ทั้งหมด และปรับมืดเล็กน้อยเพื่อให้อ่าน UI ง่าย
-	local background = Instance.new("ImageLabel")
-	background.Name = "SxngduBackground"
-	background.Size = UDim2.fromScale(1, 1)
-	background.Position = UDim2.fromScale(0, 0)
-	background.BackgroundTransparency = 1
-	background.BorderSizePixel = 0
-	background.Image = config.BackgroundImage or BACKGROUND_ID
-	background.ScaleType = Enum.ScaleType.Crop
-	background.ImageTransparency = 0.04
-	background.Active = false
-	background.ZIndex = 0
-	background.Parent = self.Gui
-	self.Background = background
-
-	local backgroundShade = Instance.new("Frame")
-	backgroundShade.Name = "BackgroundShade"
-	backgroundShade.Size = UDim2.fromScale(1, 1)
-	backgroundShade.Position = UDim2.fromScale(0, 0)
-	backgroundShade.BackgroundColor3 = Color3.fromRGB(3, 7, 16)
-	backgroundShade.BackgroundTransparency = 0.72
-	backgroundShade.BorderSizePixel = 0
-	backgroundShade.Active = false
-	backgroundShade.ZIndex = 1
-	backgroundShade.Parent = self.Gui
-	self.BackgroundShade = backgroundShade
 
 	-- Main window
 	self.Window = Instance.new("Frame")
 	self.Window.Size = UDim2.new(0, self.Width, 0, self.Height)
 	self.Window.Position = UDim2.new(0.5, -self.Width / 2, 0.5, -self.Height / 2)
 	self.Window.BackgroundColor3 = Theme.Bg
-	self.Window.BackgroundTransparency = 0.08 -- glass effect: lets a little BG show through
+	self.Window.BackgroundTransparency = 0.18 -- BG แสดงเฉพาะภายในกรอบหน้าต่าง
 	self.Window.BorderSizePixel = 0
 	self.Window.Active = true
 	self.Window.Draggable = false -- custom drag only
@@ -194,6 +167,35 @@ function Library.new(config)
 	self.Window.ZIndex = 10
 	self.Window.Parent = self.Gui
 	addCorner(self.Window, 18)
+
+	-- ==================== Window-only Background ====================
+	-- BG อยู่ภายในกรอบหน้าต่างเท่านั้น ไม่กินพื้นที่ทั้งหน้าจอ
+	local background = Instance.new("ImageLabel")
+	background.Name = "SxngduWindowBackground"
+	background.Size = UDim2.fromScale(1, 1)
+	background.Position = UDim2.fromScale(0, 0)
+	background.BackgroundTransparency = 1
+	background.BorderSizePixel = 0
+	background.Image = config.BackgroundImage or BACKGROUND_ID
+	background.ScaleType = Enum.ScaleType.Crop
+	background.ImageTransparency = 0.08
+	background.Active = false
+	background.ZIndex = 1
+	background.Parent = self.Window
+	self.Background = background
+
+	local backgroundShade = Instance.new("Frame")
+	backgroundShade.Name = "WindowBackgroundShade"
+	backgroundShade.Size = UDim2.fromScale(1, 1)
+	backgroundShade.Position = UDim2.fromScale(0, 0)
+	backgroundShade.BackgroundColor3 = Color3.fromRGB(3, 7, 16)
+	backgroundShade.BackgroundTransparency = 0.48
+	backgroundShade.BorderSizePixel = 0
+	backgroundShade.Active = false
+	backgroundShade.ZIndex = 1
+	backgroundShade.Parent = self.Window
+	self.BackgroundShade = backgroundShade
+
 	local winStroke = addStroke(self.Window, Theme.Accent, 1.4, 0.35)
 
 	-- soft outer glow line
