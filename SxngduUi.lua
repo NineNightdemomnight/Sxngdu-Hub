@@ -1,6 +1,6 @@
 --[[
-	Sxngdu UI Library v3
-	Screenshot Match · Neon Blue Glass + Window-Fit Background
+	Sxngdu UI Library v3.1 — Glass Clear
+	กระจกใส + Cyberpunk Cyan
 	+ Topmost GUI + Custom Drag + Mouse Unlock + Mobile
 ]]
 
@@ -14,32 +14,35 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local LOGO_ID  = "rbxassetid://116342011761764"
 local CLOSE_ID = "rbxassetid://107840042764581"
-
--- อัปโหลดไฟล์ BG ไปที่ Roblox Creator Dashboard แล้วใส่ Image Asset ID ตรงนี้
--- ตัวอย่าง: "rbxassetid://123456789012345"
 local BACKGROUND_ID = "rbxassetid://107556906222294"
 local HAS_TOUCH = UserInputService.TouchEnabled
 
--- ==================== Theme ====================
+-- ==================== Theme (Glass Clear) ====================
 local Theme = {
-	Bg          = Color3.fromRGB(9, 12, 20),
-	BgPanel     = Color3.fromRGB(14, 18, 30),
+	Bg          = Color3.fromRGB(8, 14, 28),
+	BgPanel     = Color3.fromRGB(12, 20, 38),
 	BgCard      = Color3.fromRGB(9, 19, 37),
-	BgHover     = Color3.fromRGB(28, 38, 62),
+	BgHover     = Color3.fromRGB(32, 48, 78),
 	Sidebar     = Color3.fromRGB(5, 13, 27),
-	Accent      = Color3.fromRGB(0, 210, 255),
-	AccentDim   = Color3.fromRGB(0, 143, 198),
-	AccentGlow  = Color3.fromRGB(100, 230, 255),
-	AccentSoft  = Color3.fromRGB(0, 90, 140),
-	Text        = Color3.fromRGB(240, 246, 255),
-	TextDim     = Color3.fromRGB(120, 145, 175),
-	Stroke      = Color3.fromRGB(40, 70, 110),
-	ToggleOn    = Color3.fromRGB(0, 200, 255),
-	ToggleOff   = Color3.fromRGB(32, 40, 58),
+	Accent      = Color3.fromRGB(0, 220, 255),
+	AccentDim   = Color3.fromRGB(0, 140, 200),
+	AccentGlow  = Color3.fromRGB(120, 240, 255),
+	AccentSoft  = Color3.fromRGB(0, 100, 150),
+	Text        = Color3.fromRGB(245, 250, 255),
+	TextDim     = Color3.fromRGB(130, 160, 190),
+	Stroke      = Color3.fromRGB(60, 120, 180),
+	ToggleOn    = Color3.fromRGB(0, 210, 255),
+	ToggleOff   = Color3.fromRGB(28, 40, 60),
 	Green       = Color3.fromRGB(50, 230, 160),
-	Red         = Color3.fromRGB(255, 75, 100),
-	Slider      = Color3.fromRGB(0, 200, 255),
-	Glass       = Color3.fromRGB(7, 18, 36),
+	Red         = Color3.fromRGB(255, 80, 110),
+	Slider      = Color3.fromRGB(0, 210, 255),
+	Glass       = Color3.fromRGB(16, 28, 48),
+	-- transparency levels (glass)
+	WinT        = 0.18,
+	PanelT      = 0.28,
+	CardT       = 0.32,
+	SidebarT    = 0.22,
+	StrokeT     = 0.35,
 }
 
 local function tween(obj, props, t, style)
@@ -54,7 +57,7 @@ local function addStroke(parent, color, thickness, transparency)
 	local s = Instance.new("UIStroke")
 	s.Color = color or Theme.Stroke
 	s.Thickness = thickness or 1
-	s.Transparency = transparency or 0.45
+	s.Transparency = transparency or Theme.StrokeT
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.Parent = parent
 	return s
@@ -124,6 +127,20 @@ local function parentGui(gui)
 	end
 end
 
+-- frost layer helper (simulates glass stack)
+local function addFrost(parent, transparency)
+	local frost = Instance.new("Frame")
+	frost.Name = "Frost"
+	frost.Size = UDim2.new(1, 0, 1, 0)
+	frost.BackgroundColor3 = Color3.fromRGB(180, 220, 255)
+	frost.BackgroundTransparency = transparency or 0.92
+	frost.BorderSizePixel = 0
+	frost.ZIndex = (parent.ZIndex or 1)
+	frost.Parent = parent
+	addCorner(frost, 18)
+	return frost
+end
+
 -- ==================== Library ====================
 local Library = {}
 Library.__index = Library
@@ -131,22 +148,18 @@ Library.__index = Library
 function Library.new(config)
 	local self = setmetatable({}, Library)
 	self.Name = config.Name or "Sxngdu Hub"
-	-- สามารถส่ง config.BackgroundImage = "rbxassetid://..." เพื่อเปลี่ยน BG ได้
 	self.Tabs = {}
 	self.CurrentTab = nil
 	self.Minimized = false
 	self.MouseUnlocked = true
-	-- ขนาดเริ่มต้นคืนตามภาพตัวอย่างที่ 2: ประมาณ 406 x 229 px
-	-- ใช้ logical size 780 x 440 และ UIScale 0.52 (780*0.52 x 440*0.52)
 	self.Width = config.Width or 780
-	self.Height = config.Height or 440
-	self.Scale = config.Scale or 0.52
+	self.Height = config.Height or 500
+	self.Scale = config.Scale or 1
 	self.MinWidth = config.MinWidth or 560
 	self.MinHeight = config.MinHeight or 360
 	self.MaxWidth = config.MaxWidth or 1200
 	self.MaxHeight = config.MaxHeight or 820
 
-	-- ScreenGui (topmost)
 	self.Gui = Instance.new("ScreenGui")
 	self.Gui.Name = "SxngduLib_" .. tostring(math.random(10000, 99999))
 	self.Gui.ResetOnSpawn = false
@@ -156,76 +169,62 @@ function Library.new(config)
 	self.Gui.Enabled = true
 	parentGui(self.Gui)
 
-
-	-- Main window
+	-- Main window (glass)
 	self.Window = Instance.new("Frame")
 	self.Window.Size = UDim2.new(0, self.Width, 0, self.Height)
-	self.Window.AnchorPoint = Vector2.new(0.5, 0.5)
-	self.Window.Position = UDim2.fromScale(0.5, 0.5)
+	self.Window.Position = UDim2.new(0.5, -self.Width / 2, 0.5, -self.Height / 2)
 	self.Window.BackgroundColor3 = Theme.Bg
-	self.Window.BackgroundTransparency = 0 -- fallback base under the image
+	self.Window.BackgroundTransparency = Theme.WinT
 	self.Window.BorderSizePixel = 0
 	self.Window.Active = true
-	self.Window.Draggable = false -- custom drag only
+	self.Window.Draggable = false
 	self.Window.ClipsDescendants = true
 	self.Window.ZIndex = 10
 	self.Window.Parent = self.Gui
-	addCorner(self.Window, 18)
-
-	-- ย่อทั้งหน้าต่างและองค์ประกอบด้านในพร้อมกัน ไม่ใช่ย่อเฉพาะกรอบ
 	self.WindowScale = Instance.new("UIScale")
 	self.WindowScale.Scale = self.Scale
 	self.WindowScale.Parent = self.Window
 
-	-- ==================== Window-only Background ====================
-	-- BG อยู่ภายในกรอบหน้าต่างเท่านั้น ไม่กินพื้นที่ทั้งหน้าจอ
 	local background = Instance.new("ImageLabel")
 	background.Name = "SxngduWindowBackground"
 	background.Size = UDim2.fromScale(1, 1)
-	background.Position = UDim2.fromScale(0, 0)
 	background.BackgroundTransparency = 1
 	background.BorderSizePixel = 0
 	background.Image = config.BackgroundImage or BACKGROUND_ID
-	background.ScaleType = Enum.ScaleType.Stretch -- fill the exact Window bounds
+	background.ScaleType = Enum.ScaleType.Stretch
 	background.ImageTransparency = math.clamp(config.BackgroundTransparency or 0, 0, 1)
-	background.Active = false
 	background.ZIndex = 10
 	background.Parent = self.Window
 	self.Background = background
-
 	local backgroundShade = Instance.new("Frame")
 	backgroundShade.Name = "WindowBackgroundShade"
 	backgroundShade.Size = UDim2.fromScale(1, 1)
-	backgroundShade.Position = UDim2.fromScale(0, 0)
 	backgroundShade.BackgroundColor3 = Color3.fromRGB(3, 7, 16)
-	backgroundShade.BackgroundTransparency = math.clamp(config.BackgroundShadeTransparency or 0.70, 0, 1) -- visible artwork with readable UI
+	backgroundShade.BackgroundTransparency = math.clamp(config.BackgroundShadeTransparency or 0.70, 0, 1)
 	backgroundShade.BorderSizePixel = 0
-	backgroundShade.Active = false
 	backgroundShade.ZIndex = 11
 	backgroundShade.Parent = self.Window
 	self.BackgroundShade = backgroundShade
 
-	local winStroke = addStroke(self.Window, Theme.Accent, 1.4, 0.35)
+	addCorner(self.Window, 20)
+	addStroke(self.Window, Theme.Accent, 1.5, 0.4)
+	addFrost(self.Window, 0.94)
 
-	-- soft outer glow line
+	-- top accent glass bar
 	local glow = Instance.new("Frame")
 	glow.Size = UDim2.new(1, 0, 0, 3)
 	glow.BackgroundColor3 = Theme.Accent
+	glow.BackgroundTransparency = 0.15
 	glow.BorderSizePixel = 0
 	glow.ZIndex = 20
 	glow.Parent = self.Window
-	addGradient(glow,
-		Color3.fromRGB(0, 60, 120),
-		Theme.Accent,
-		0
-	)
-	local glow2 = Instance.new("UIGradient")
-	glow2.Color = ColorSequence.new({
+	local glowGrad = Instance.new("UIGradient")
+	glowGrad.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 50, 100)),
 		ColorSequenceKeypoint.new(0.5, Theme.AccentGlow),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 50, 100)),
 	})
-	glow2.Parent = glow
+	glowGrad.Parent = glow
 
 	-- ========== SIDEBAR ==========
 	local sidebar = Instance.new("Frame")
@@ -233,20 +232,18 @@ function Library.new(config)
 	sidebar.Size = UDim2.new(0, 210, 1, -3)
 	sidebar.Position = UDim2.new(0, 0, 0, 3)
 	sidebar.BackgroundColor3 = Theme.Sidebar
-	sidebar.BackgroundTransparency = 0.20
+	sidebar.BackgroundTransparency = Theme.SidebarT
 	sidebar.BorderSizePixel = 0
-	sidebar.ZIndex = 12
 	sidebar.Parent = self.Window
 
 	local sideLine = Instance.new("Frame")
 	sideLine.Size = UDim2.new(0, 1, 1, 0)
 	sideLine.Position = UDim2.new(1, -1, 0, 0)
-	sideLine.BackgroundColor3 = Theme.Stroke
-	sideLine.BackgroundTransparency = 0.55
+	sideLine.BackgroundColor3 = Theme.Accent
+	sideLine.BackgroundTransparency = 0.7
 	sideLine.BorderSizePixel = 0
 	sideLine.Parent = sidebar
 
-	-- brand
 	local brand = Instance.new("Frame")
 	brand.Size = UDim2.new(1, -20, 0, 42)
 	brand.Position = UDim2.new(0, 10, 0, 14)
@@ -262,27 +259,27 @@ function Library.new(config)
 	brandLogo.Parent = brand
 
 	makeLabel(brand, "SXNGDU", UDim2.new(1, -40, 0, 18), UDim2.new(0, 40, 0, 4), Theme.Accent, Enum.Font.GothamBold, 14)
-	makeLabel(brand, "HUB  ·  v3", UDim2.new(1, -40, 0, 14), UDim2.new(0, 40, 0, 22), Theme.TextDim, Enum.Font.Gotham, 10)
+	makeLabel(brand, "HUB  ·  GLASS", UDim2.new(1, -40, 0, 14), UDim2.new(0, 40, 0, 22), Theme.TextDim, Enum.Font.Gotham, 10)
 
-	-- avatar card
 	local avatarCard = Instance.new("Frame")
 	avatarCard.Size = UDim2.new(1, -20, 0, 88)
 	avatarCard.Position = UDim2.new(0, 10, 0, 64)
 	avatarCard.BackgroundColor3 = Theme.BgCard
-	avatarCard.BackgroundTransparency = 0.24
+	avatarCard.BackgroundTransparency = Theme.CardT
 	avatarCard.BorderSizePixel = 0
 	avatarCard.Parent = sidebar
 	addCorner(avatarCard, 14)
-	addStroke(avatarCard, Theme.Stroke, 1, 0.55)
+	addStroke(avatarCard, Theme.Accent, 1, 0.55)
 
 	local avatarFrame = Instance.new("Frame")
 	avatarFrame.Size = UDim2.new(0, 52, 0, 52)
 	avatarFrame.Position = UDim2.new(0, 12, 0.5, -26)
 	avatarFrame.BackgroundColor3 = Theme.BgPanel
+	avatarFrame.BackgroundTransparency = 0.35
 	avatarFrame.BorderSizePixel = 0
 	avatarFrame.Parent = avatarCard
 	addCorner(avatarFrame, 26)
-	addStroke(avatarFrame, Theme.Accent, 1.5, 0.25)
+	addStroke(avatarFrame, Theme.Accent, 1.5, 0.3)
 
 	local avatar = Instance.new("ImageLabel")
 	avatar.Size = UDim2.new(1, -4, 1, -4)
@@ -310,7 +307,6 @@ function Library.new(config)
 	makeLabel(avatarCard, LocalPlayer.DisplayName, UDim2.new(1, -78, 0, 18), UDim2.new(0, 72, 0, 24), Theme.Text, Enum.Font.GothamBold, 13)
 	makeLabel(avatarCard, "@" .. LocalPlayer.Name, UDim2.new(1, -78, 0, 14), UDim2.new(0, 72, 0, 46), Theme.TextDim, Enum.Font.Gotham, 11)
 
-	-- info rows
 	local function infoRow(y, label, value)
 		local row = Instance.new("Frame")
 		row.Size = UDim2.new(1, -20, 0, 20)
@@ -333,11 +329,9 @@ function Library.new(config)
 		end)
 		return ok and string.sub(name, 1, 12) or tostring(game.PlaceId)
 	end)())
-
 	local pingLabel = infoRow(234, "Ping", "- ms")
 	local sessionLabel = infoRow(256, "Session", "00:00")
 	local sessionStart = os.clock()
-
 	task.spawn(function()
 		while self.Gui and self.Gui.Parent do
 			local sec = math.floor(os.clock() - sessionStart)
@@ -352,12 +346,11 @@ function Library.new(config)
 		end
 	end)
 
-	-- status pill
 	local statusFrame = Instance.new("Frame")
 	statusFrame.Size = UDim2.new(1, -20, 0, 34)
 	statusFrame.Position = UDim2.new(0, 10, 1, -48)
 	statusFrame.BackgroundColor3 = Theme.BgCard
-	statusFrame.BackgroundTransparency = 0.20
+	statusFrame.BackgroundTransparency = Theme.CardT
 	statusFrame.BorderSizePixel = 0
 	statusFrame.Parent = sidebar
 	addCorner(statusFrame, 10)
@@ -370,10 +363,8 @@ function Library.new(config)
 	statusDot.BorderSizePixel = 0
 	statusDot.Parent = statusFrame
 	addCorner(statusDot, 4)
-
 	makeLabel(statusFrame, "Connected", UDim2.new(1, -28, 1, 0), UDim2.new(0, 26, 0, 0), Theme.Green, Enum.Font.GothamMedium, 12)
 
-	-- pulse online dot
 	task.spawn(function()
 		while self.Gui and self.Gui.Parent do
 			tween(statusDot, {BackgroundTransparency = 0.4}, 0.6)
@@ -389,13 +380,13 @@ function Library.new(config)
 	right.Size = UDim2.new(1, -218, 1, -3)
 	right.Position = UDim2.new(0, 214, 0, 3)
 	right.BackgroundTransparency = 1
-	right.ZIndex = 12
 	right.Parent = self.Window
 
-	-- title bar (drag zone)
 	local titleBar = Instance.new("Frame")
 	titleBar.Size = UDim2.new(1, 0, 0, 48)
-	titleBar.BackgroundTransparency = 1
+	titleBar.BackgroundColor3 = Theme.BgPanel
+	titleBar.BackgroundTransparency = 0.55
+	titleBar.BorderSizePixel = 0
 	titleBar.Parent = right
 
 	local logoSmall = Instance.new("ImageLabel")
@@ -405,14 +396,13 @@ function Library.new(config)
 	logoSmall.Image = LOGO_ID
 	logoSmall.ScaleType = Enum.ScaleType.Fit
 	logoSmall.Parent = titleBar
-
 	makeLabel(titleBar, self.Name, UDim2.new(0.6, 0, 1, 0), UDim2.new(0, 42, 0, 0), Theme.Text, Enum.Font.GothamBold, 15)
 
 	local minBtn = Instance.new("TextButton")
 	minBtn.Size = UDim2.new(0, 32, 0, 32)
 	minBtn.Position = UDim2.new(1, -76, 0.5, -16)
 	minBtn.BackgroundColor3 = Theme.BgCard
-	minBtn.BackgroundTransparency = 0.18
+	minBtn.BackgroundTransparency = Theme.CardT
 	minBtn.Text = "–"
 	minBtn.TextColor3 = Theme.Accent
 	minBtn.Font = Enum.Font.GothamBold
@@ -421,14 +411,14 @@ function Library.new(config)
 	minBtn.Parent = titleBar
 	addCorner(minBtn, 10)
 	addStroke(minBtn, Theme.Stroke, 1, 0.4)
-	minBtn.MouseEnter:Connect(function() tween(minBtn, {BackgroundColor3 = Theme.BgHover}) end)
-	minBtn.MouseLeave:Connect(function() tween(minBtn, {BackgroundColor3 = Theme.BgCard}) end)
+	minBtn.MouseEnter:Connect(function() tween(minBtn, {BackgroundTransparency = 0.1}) end)
+	minBtn.MouseLeave:Connect(function() tween(minBtn, {BackgroundTransparency = Theme.CardT}) end)
 
 	local close = Instance.new("ImageButton")
 	close.Size = UDim2.new(0, 32, 0, 32)
 	close.Position = UDim2.new(1, -38, 0.5, -16)
 	close.BackgroundColor3 = Theme.BgCard
-	close.BackgroundTransparency = 0.18
+	close.BackgroundTransparency = Theme.CardT
 	close.Image = CLOSE_ID
 	close.ScaleType = Enum.ScaleType.Fit
 	close.AutoButtonColor = false
@@ -436,14 +426,13 @@ function Library.new(config)
 	addCorner(close, 10)
 	addStroke(close, Theme.Red, 1, 0.45)
 	addPadding(close, 6, 6, 6, 6)
-	close.MouseEnter:Connect(function() tween(close, {BackgroundColor3 = Color3.fromRGB(55, 18, 28)}) end)
-	close.MouseLeave:Connect(function() tween(close, {BackgroundColor3 = Theme.BgCard}) end)
+	close.MouseEnter:Connect(function() tween(close, {BackgroundColor3 = Color3.fromRGB(55, 18, 28), BackgroundTransparency = 0.15}) end)
+	close.MouseLeave:Connect(function() tween(close, {BackgroundColor3 = Theme.BgCard, BackgroundTransparency = Theme.CardT}) end)
 	close.MouseButton1Click:Connect(function()
 		self.Gui.Enabled = false
 		self:LockMouse()
 	end)
 
-	-- custom window drag (title bar only)
 	do
 		local dragging, dragStart, startPos = false, nil, nil
 		titleBar.InputBegan:Connect(function(input)
@@ -473,7 +462,6 @@ function Library.new(config)
 		end)
 	end
 
-	-- tab bar
 	self.TabBar = Instance.new("ScrollingFrame")
 	self.TabBar.Name = "TabBar"
 	self.TabBar.Size = UDim2.new(1, -16, 0, 36)
@@ -502,7 +490,6 @@ function Library.new(config)
 	self.Content.BackgroundTransparency = 1
 	self.Content.Parent = right
 
-	-- resize handles
 	local function makeResizeHandle(size, pos, edges)
 		local h = Instance.new("TextButton")
 		h.Size = size
@@ -511,13 +498,14 @@ function Library.new(config)
 		h.Text = ""
 		h.ZIndex = 50
 		h.Parent = self.Window
-		local resizing, startMouse, startSize = false, nil, nil
+		local resizing, startMouse, startSize, startPos = false, nil, nil, nil
 		h.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch then
 				resizing = true
 				startMouse = UserInputService:GetMouseLocation()
-				startSize = Vector2.new(self.Width, self.Height)
+				startSize = self.Window.AbsoluteSize
+				startPos = self.Window.AbsolutePosition
 			end
 		end)
 		UserInputService.InputEnded:Connect(function(input)
@@ -531,19 +519,24 @@ function Library.new(config)
 			if input.UserInputType ~= Enum.UserInputType.MouseMovement
 				and input.UserInputType ~= Enum.UserInputType.Touch then return end
 			local mouse = UserInputService:GetMouseLocation()
-			-- แปลงระยะเมาส์จากพิกเซลจริงกลับเป็น logical size ก่อนปรับขนาด
-			local dx = (mouse.X - startMouse.X) / self.WindowScale.Scale
-			local dy = (mouse.Y - startMouse.Y) / self.WindowScale.Scale
-			local newW, newH = startSize.X, startSize.Y
+			local dx = mouse.X - startMouse.X
+			local dy = mouse.Y - startMouse.Y
+			local newW, newH, newX, newY = startSize.X, startSize.Y, startPos.X, startPos.Y
 			if edges.Right then newW = math.clamp(startSize.X + dx, self.MinWidth, self.MaxWidth) end
-			if edges.Left then newW = math.clamp(startSize.X - dx, self.MinWidth, self.MaxWidth) end
 			if edges.Bottom then newH = math.clamp(startSize.Y + dy, self.MinHeight, self.MaxHeight) end
-			if edges.Top then newH = math.clamp(startSize.Y - dy, self.MinHeight, self.MaxHeight) end
-			self.Window.Size = UDim2.fromOffset(newW, newH)
+			if edges.Left then
+				newW = math.clamp(startSize.X - dx, self.MinWidth, self.MaxWidth)
+				newX = startPos.X + (startSize.X - newW)
+			end
+			if edges.Top then
+				newH = math.clamp(startSize.Y - dy, self.MinHeight, self.MaxHeight)
+				newY = startPos.Y + (startSize.Y - newH)
+			end
+			self.Window.Size = UDim2.new(0, newW, 0, newH)
+			self.Window.Position = UDim2.new(0, newX, 0, newY)
 			self.Width, self.Height = newW, newH
 		end)
 	end
-
 	makeResizeHandle(UDim2.new(0, 8, 1, -16), UDim2.new(1, -8, 0, 8), {Right = true})
 	makeResizeHandle(UDim2.new(1, -16, 0, 8), UDim2.new(0, 8, 1, -8), {Bottom = true})
 	makeResizeHandle(UDim2.new(0, 14, 0, 14), UDim2.new(1, -14, 1, -14), {Right = true, Bottom = true})
@@ -560,11 +553,11 @@ function Library.new(config)
 	cornerDot.Parent = self.Window
 	addCorner(cornerDot, 3)
 
-	-- float icon
 	self.FloatIcon = Instance.new("ImageButton")
 	self.FloatIcon.Size = UDim2.new(0, 58, 0, 58)
 	self.FloatIcon.Position = UDim2.new(0, 18, 0.5, -29)
 	self.FloatIcon.BackgroundColor3 = Theme.BgPanel
+	self.FloatIcon.BackgroundTransparency = 0.25
 	self.FloatIcon.Image = LOGO_ID
 	self.FloatIcon.ScaleType = Enum.ScaleType.Fit
 	self.FloatIcon.AutoButtonColor = false
@@ -572,7 +565,7 @@ function Library.new(config)
 	self.FloatIcon.ZIndex = 100
 	self.FloatIcon.Parent = self.Gui
 	addCorner(self.FloatIcon, 16)
-	addStroke(self.FloatIcon, Theme.Accent, 1.6, 0.2)
+	addStroke(self.FloatIcon, Theme.Accent, 1.6, 0.25)
 	addPadding(self.FloatIcon, 5, 5, 5, 5)
 
 	local fDragging, fStart, fPos, fMoved = false, nil, nil, false
@@ -597,14 +590,7 @@ function Library.new(config)
 			fDragging = false
 		end
 	end)
-	self.FloatIcon.MouseEnter:Connect(function()
-		tween(self.FloatIcon, {Size = UDim2.new(0, 64, 0, 64)}, 0.15)
-	end)
-	self.FloatIcon.MouseLeave:Connect(function()
-		tween(self.FloatIcon, {Size = UDim2.new(0, 58, 0, 58)}, 0.15)
-	end)
 
-	-- mouse helpers
 	function self:UnlockMouse()
 		self.MouseUnlocked = true
 		pcall(function()
@@ -618,7 +604,6 @@ function Library.new(config)
 			UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 		end)
 	end
-
 	function self:Minimize()
 		self.Minimized = true
 		self.Window.Visible = false
@@ -632,10 +617,8 @@ function Library.new(config)
 		self.Gui.Enabled = true
 		self:UnlockMouse()
 	end
-
 	minBtn.MouseButton1Click:Connect(function() self:Minimize() end)
 
-	-- keep mouse free while UI open
 	self._mouseConn = RunService.RenderStepped:Connect(function()
 		if not self.Gui or not self.Gui.Parent then return end
 		if self.Gui.Enabled and self.Window.Visible and not self.Minimized then
@@ -663,7 +646,6 @@ function Library.new(config)
 			end
 		end
 	end)
-
 	self:UnlockMouse()
 
 	-- Home + Credits
@@ -673,12 +655,12 @@ function Library.new(config)
 	local homeCard = Instance.new("Frame")
 	homeCard.Size = UDim2.new(1, -4, 0, 118)
 	homeCard.BackgroundColor3 = Theme.BgCard
-	homeCard.BackgroundTransparency = 0.24
+	homeCard.BackgroundTransparency = Theme.CardT
 	homeCard.BorderSizePixel = 0
 	homeCard.Parent = homeTab.Frame
 	addCorner(homeCard, 14)
 	addStroke(homeCard, Theme.Accent, 1.1, 0.4)
-	addGradient(homeCard, Theme.BgCard, Color3.fromRGB(12, 28, 48), 45)
+	addGradient(homeCard, Theme.BgCard, Color3.fromRGB(12, 40, 70), 45)
 
 	local homeLogo = Instance.new("ImageLabel")
 	homeLogo.Size = UDim2.new(0, 52, 0, 52)
@@ -687,14 +669,14 @@ function Library.new(config)
 	homeLogo.Image = LOGO_ID
 	homeLogo.ScaleType = Enum.ScaleType.Fit
 	homeLogo.Parent = homeCard
-
 	makeLabel(homeCard, "SXNGDU HUB", UDim2.new(1, -90, 0, 24), UDim2.new(0, 82, 0, 28), Theme.Accent, Enum.Font.GothamBold, 18)
-	makeLabel(homeCard, "Modern loader  ·  Scripts ready", UDim2.new(1, -90, 0, 18), UDim2.new(0, 82, 0, 56), Theme.TextDim, Enum.Font.Gotham, 12)
+	makeLabel(homeCard, "Glass Clear  ·  Scripts ready", UDim2.new(1, -90, 0, 18), UDim2.new(0, 82, 0, 56), Theme.TextDim, Enum.Font.Gotham, 12)
 
 	local badge = Instance.new("Frame")
 	badge.Size = UDim2.new(0, 64, 0, 22)
 	badge.Position = UDim2.new(1, -78, 0, 14)
 	badge.BackgroundColor3 = Color3.fromRGB(20, 50, 40)
+	badge.BackgroundTransparency = 0.25
 	badge.BorderSizePixel = 0
 	badge.Parent = homeCard
 	addCorner(badge, 8)
@@ -717,7 +699,7 @@ function Library.new(config)
 	local credCard = Instance.new("Frame")
 	credCard.Size = UDim2.new(1, -4, 0, 92)
 	credCard.BackgroundColor3 = Theme.BgCard
-	credCard.BackgroundTransparency = 0.24
+	credCard.BackgroundTransparency = Theme.CardT
 	credCard.BorderSizePixel = 0
 	credCard.Parent = creditsTab.Frame
 	addCorner(credCard, 14)
@@ -730,13 +712,11 @@ function Library.new(config)
 	credLogo.Image = LOGO_ID
 	credLogo.ScaleType = Enum.ScaleType.Fit
 	credLogo.Parent = credCard
-
 	makeLabel(credCard, "sxngdu", UDim2.new(1, -80, 0, 22), UDim2.new(0, 76, 0, 24), Theme.Text, Enum.Font.GothamBold, 16)
 	makeLabel(credCard, "Main Developer  ·  UI & Scripts", UDim2.new(1, -80, 0, 18), UDim2.new(0, 76, 0, 48), Theme.TextDim, Enum.Font.Gotham, 12)
-
 	self:CreateLabel(creditsTab, "")
 	self:CreateLabel(creditsTab, "ABOUT")
-	self:CreateLabel(creditsTab, "Sxngdu Hub — Glass Cyan Edition")
+	self:CreateLabel(creditsTab, "Sxngdu Hub — Glass Clear Edition")
 	self:CreateLabel(creditsTab, "RightShift toggle  ·  LeftAlt mouse unlock")
 	self:CreateButton(creditsTab, "  Discord (soon)", function()
 		self:Notify("Discord", "กำลังเปิดเร็ว ๆ นี้", 2)
@@ -770,7 +750,7 @@ function Library:CreateTab(name)
 	btn.Size = UDim2.new(0, 0, 0, 30)
 	btn.AutomaticSize = Enum.AutomaticSize.X
 	btn.BackgroundColor3 = Theme.BgCard
-	btn.BackgroundTransparency = 0.24
+	btn.BackgroundTransparency = Theme.CardT
 	btn.Text = "  " .. name .. "  "
 	btn.TextColor3 = Theme.TextDim
 	btn.Font = Enum.Font.GothamMedium
@@ -778,22 +758,22 @@ function Library:CreateTab(name)
 	btn.AutoButtonColor = false
 	btn.Parent = self.TabBar
 	addCorner(btn, 9)
-	local btnStroke = addStroke(btn, Theme.Stroke, 1, 0.65)
+	local btnStroke = addStroke(btn, Theme.Stroke, 1, 0.55)
 
 	btn.MouseEnter:Connect(function()
-		if self.CurrentTab ~= tab then tween(btn, {BackgroundColor3 = Theme.BgHover}) end
+		if self.CurrentTab ~= tab then tween(btn, {BackgroundTransparency = 0.15}) end
 	end)
 	btn.MouseLeave:Connect(function()
-		if self.CurrentTab ~= tab then tween(btn, {BackgroundColor3 = Theme.BgCard}) end
+		if self.CurrentTab ~= tab then tween(btn, {BackgroundTransparency = Theme.CardT}) end
 	end)
 	btn.MouseButton1Click:Connect(function()
 		for _, t in pairs(self.Tabs) do
 			t.Frame.Visible = false
-			tween(t.Btn, {BackgroundColor3 = Theme.BgCard, TextColor3 = Theme.TextDim})
-			if t.Stroke then t.Stroke.Transparency = 0.65 end
+			tween(t.Btn, {BackgroundColor3 = Theme.BgCard, BackgroundTransparency = Theme.CardT, TextColor3 = Theme.TextDim})
+			if t.Stroke then t.Stroke.Transparency = 0.55 end
 		end
 		tab.Frame.Visible = true
-		tween(btn, {BackgroundColor3 = Theme.AccentDim, TextColor3 = Theme.Text})
+		tween(btn, {BackgroundColor3 = Theme.AccentDim, BackgroundTransparency = 0.15, TextColor3 = Theme.Text})
 		btnStroke.Color = Theme.Accent
 		btnStroke.Transparency = 0.15
 		self.CurrentTab = tab
@@ -802,10 +782,10 @@ function Library:CreateTab(name)
 	tab.Btn = btn
 	tab.Stroke = btnStroke
 	self.Tabs[name] = tab
-
 	if not self.CurrentTab then
 		tab.Frame.Visible = true
 		btn.BackgroundColor3 = Theme.AccentDim
+		btn.BackgroundTransparency = 0.15
 		btn.TextColor3 = Theme.Text
 		btnStroke.Color = Theme.Accent
 		btnStroke.Transparency = 0.15
@@ -818,12 +798,11 @@ function Library:CreateToggle(tab, text, default, callback)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(1, -4, 0, 40)
 	frame.BackgroundColor3 = Theme.BgCard
-	frame.BackgroundTransparency = 0.24
+	frame.BackgroundTransparency = Theme.CardT
 	frame.BorderSizePixel = 0
 	frame.Parent = tab.Frame
 	addCorner(frame, 11)
-	addStroke(frame, Theme.Stroke, 1, 0.7)
-
+	addStroke(frame, Theme.Stroke, 1, 0.55)
 	makeLabel(frame, text, UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 14, 0, 0), Theme.Text, Enum.Font.Gotham, 13)
 
 	local state = default == true
@@ -831,6 +810,7 @@ function Library:CreateToggle(tab, text, default, callback)
 	sw.Size = UDim2.new(0, 48, 0, 26)
 	sw.Position = UDim2.new(1, -60, 0.5, -13)
 	sw.BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff
+	sw.BackgroundTransparency = state and 0.15 or 0.25
 	sw.Text = ""
 	sw.AutoButtonColor = false
 	sw.Parent = frame
@@ -846,18 +826,21 @@ function Library:CreateToggle(tab, text, default, callback)
 
 	sw.MouseButton1Click:Connect(function()
 		state = not state
-		tween(sw, {BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff})
+		tween(sw, {
+			BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff,
+			BackgroundTransparency = state and 0.15 or 0.25,
+		})
 		tween(circle, {Position = state and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)})
 		swStroke.Color = state and Theme.AccentGlow or Theme.Stroke
 		swStroke.Transparency = state and 0.2 or 0.55
 		if callback then callback(state) end
 	end)
-
 	return {
 		Get = function() return state end,
 		Set = function(v)
 			state = v == true
 			sw.BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff
+			sw.BackgroundTransparency = state and 0.15 or 0.25
 			circle.Position = state and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
 			swStroke.Color = state and Theme.AccentGlow or Theme.Stroke
 			swStroke.Transparency = state and 0.2 or 0.55
@@ -869,7 +852,7 @@ function Library:CreateButton(tab, text, callback)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, -4, 0, 38)
 	btn.BackgroundColor3 = Theme.AccentDim
-	btn.BackgroundTransparency = 0.02
+	btn.BackgroundTransparency = 0.2
 	btn.Text = text
 	btn.TextColor3 = Theme.Text
 	btn.Font = Enum.Font.GothamBold
@@ -878,13 +861,12 @@ function Library:CreateButton(tab, text, callback)
 	btn.Parent = tab.Frame
 	addCorner(btn, 11)
 	local st = addStroke(btn, Theme.Accent, 1.1, 0.35)
-
 	btn.MouseEnter:Connect(function()
-		tween(btn, {BackgroundColor3 = Theme.Accent})
+		tween(btn, {BackgroundColor3 = Theme.Accent, BackgroundTransparency = 0.05})
 		st.Transparency = 0.1
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, {BackgroundColor3 = Theme.AccentDim})
+		tween(btn, {BackgroundColor3 = Theme.AccentDim, BackgroundTransparency = 0.2})
 		st.Transparency = 0.35
 	end)
 	btn.MouseButton1Click:Connect(function()
@@ -897,15 +879,44 @@ function Library:CreateLabel(tab, text)
 	return makeLabel(tab.Frame, text, UDim2.new(1, -4, 0, 18), nil, Theme.TextDim, Enum.Font.GothamMedium, 11)
 end
 
+function Library:CreateTextbox(tab, placeholder, default, callback)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -4, 0, 40)
+	frame.BackgroundColor3 = Theme.BgCard
+	frame.BackgroundTransparency = Theme.CardT
+	frame.BorderSizePixel = 0
+	frame.Parent = tab.Frame
+	addCorner(frame, 11)
+	addStroke(frame, Theme.Stroke, 1, 0.5)
+
+	local box = Instance.new("TextBox")
+	box.Size = UDim2.new(1, -20, 1, -8)
+	box.Position = UDim2.new(0, 10, 0, 4)
+	box.BackgroundTransparency = 1
+	box.PlaceholderText = placeholder or "..."
+	box.Text = default or ""
+	box.TextColor3 = Theme.Text
+	box.PlaceholderColor3 = Theme.TextDim
+	box.Font = Enum.Font.Gotham
+	box.TextSize = 13
+	box.TextXAlignment = Enum.TextXAlignment.Left
+	box.ClearTextOnFocus = false
+	box.Parent = frame
+	box.FocusLost:Connect(function()
+		if callback then callback(box.Text) end
+	end)
+	return box
+end
+
 function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(1, -4, 0, 56)
 	frame.BackgroundColor3 = Theme.BgCard
-	frame.BackgroundTransparency = 0.24
+	frame.BackgroundTransparency = Theme.CardT
 	frame.BorderSizePixel = 0
 	frame.Parent = tab.Frame
 	addCorner(frame, 11)
-	addStroke(frame, Theme.Stroke, 1, 0.7)
+	addStroke(frame, Theme.Stroke, 1, 0.55)
 
 	local value = default or minV
 	local lbl = makeLabel(frame, text .. "  ·  " .. value, UDim2.new(1, -16, 0, 20), UDim2.new(0, 14, 0, 8), Theme.Text, Enum.Font.Gotham, 12)
@@ -914,7 +925,7 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	bg.Size = UDim2.new(1, -28, 0, 7)
 	bg.Position = UDim2.new(0, 14, 0, 36)
 	bg.BackgroundColor3 = Theme.ToggleOff
-	bg.BackgroundTransparency = 0.10
+	bg.BackgroundTransparency = 0.2
 	bg.BorderSizePixel = 0
 	bg.Parent = frame
 	addCorner(bg, 4)
@@ -922,6 +933,7 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	local fill = Instance.new("Frame")
 	fill.Size = UDim2.new((value - minV) / math.max(maxV - minV, 1), 0, 1, 0)
 	fill.BackgroundColor3 = Theme.Slider
+	fill.BackgroundTransparency = 0.1
 	fill.BorderSizePixel = 0
 	fill.Parent = bg
 	addCorner(fill, 4)
@@ -947,7 +959,6 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 		lbl.Text = text .. "  ·  " .. value
 		if callback then callback(value) end
 	end
-
 	knob.InputBegan:Connect(function(i)
 		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 			drag = true
@@ -970,7 +981,6 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 			update((UserInputService:GetMouseLocation().X - bg.AbsolutePosition.X) / math.max(bg.AbsoluteSize.X, 1))
 		end
 	end)
-
 	return {
 		Get = function() return value end,
 		Set = function(v)
@@ -989,11 +999,12 @@ function Library:Notify(title, text, duration)
 	n.Size = UDim2.new(0, 280, 0, 64)
 	n.Position = UDim2.new(1, -300, 1, 30)
 	n.BackgroundColor3 = Theme.BgPanel
+	n.BackgroundTransparency = 0.2
 	n.BorderSizePixel = 0
 	n.ZIndex = 200
 	n.Parent = self.Gui
 	addCorner(n, 12)
-	addStroke(n, Theme.Accent, 1.2, 0.25)
+	addStroke(n, Theme.Accent, 1.2, 0.3)
 
 	local bar = Instance.new("Frame")
 	bar.Size = UDim2.new(0, 3, 1, -14)
@@ -1002,10 +1013,8 @@ function Library:Notify(title, text, duration)
 	bar.BorderSizePixel = 0
 	bar.Parent = n
 	addCorner(bar, 2)
-
 	makeLabel(n, title, UDim2.new(1, -28, 0, 20), UDim2.new(0, 18, 0, 10), Theme.Accent, Enum.Font.GothamBold, 13)
 	makeLabel(n, text, UDim2.new(1, -28, 0, 20), UDim2.new(0, 18, 0, 32), Theme.Text, Enum.Font.Gotham, 12)
-
 	tween(n, {Position = UDim2.new(1, -300, 1, -86)}, 0.35)
 	task.delay(duration, function()
 		tween(n, {Position = UDim2.new(1, -300, 1, 30)}, 0.28)
