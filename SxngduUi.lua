@@ -442,7 +442,11 @@ function Library.new(config)
 	close.MouseLeave:Connect(function() tween(close, {BackgroundColor3 = Theme.BgCard, BackgroundTransparency = Theme.CardT}) end)
 	close.MouseButton1Click:Connect(function()
 		self.Gui.Enabled = false
-		self:LockMouse()
+		if self.AltLockEnabled then
+			self:LockMouse()
+		else
+			self:UnlockMouse()
+		end
 	end)
 
 	do
@@ -611,6 +615,11 @@ function Library.new(config)
 		end)
 	end
 	function self:LockMouse()
+		-- ถ้าปิดระบบล็อกเมาส์จาก Home → ไม่ล็อกเด็ดขาด
+		if self.AltLockEnabled == false then
+			self:UnlockMouse()
+			return
+		end
 		self.MouseUnlocked = false
 		pcall(function()
 			UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
@@ -620,7 +629,12 @@ function Library.new(config)
 		self.Minimized = true
 		self.Window.Visible = false
 		self.FloatIcon.Visible = true
-		self:LockMouse()
+		-- ล็อกเมาส์เมื่อพับเฉพาะตอนเปิดระบบล็อกไว้
+		if self.AltLockEnabled then
+			self:LockMouse()
+		else
+			self:UnlockMouse()
+		end
 	end
 	function self:Restore()
 		self.Minimized = false
@@ -699,13 +713,13 @@ function Library.new(config)
 
 	self:CreateLabel(homeTab, "")
 	self:CreateLabel(homeTab, "QUICK ACTIONS")
-	self:CreateToggle(homeTab, "Alt ล็อกเมาส์ (LeftAlt)", true, function(on)
+	self:CreateToggle(homeTab, "ระบบล็อกเมาส์ (พับ UI / LeftAlt)", true, function(on)
 		self.AltLockEnabled = on
 		if on then
-			self:Notify("Mouse", "เปิด LeftAlt ล็อก/ปลดเมาส์", 2)
+			self:Notify("Mouse", "เปิดแล้ว · พับ UI หรือกด LeftAlt จะล็อกเมาส์", 3)
 		else
 			self:UnlockMouse()
-			self:Notify("Mouse", "ปิดระบบ LeftAlt แล้ว", 2)
+			self:Notify("Mouse", "ปิดแล้ว · พับ UI จะไม่ล็อกเมาส์", 3)
 		end
 	end)
 	self:CreateButton(homeTab, "  เริ่มใช้งาน", function()
