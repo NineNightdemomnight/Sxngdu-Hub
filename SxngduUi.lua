@@ -1,8 +1,7 @@
 --[[
-	Sxngdu UI Library v3.1 — Glass Clear (Fixed ZIndex)
+	Sxngdu UI Library v3.1 — Glass Clear
 	กระจกใส + Cyberpunk Cyan
 	+ Topmost GUI + Custom Drag + Mouse Unlock + Mobile
-	FIX: Background/Frost ZIndex ต่ำลง → Sidebar/Content ขึ้นจริง
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -136,7 +135,8 @@ local function addFrost(parent, transparency)
 	frost.BackgroundColor3 = Color3.fromRGB(180, 220, 255)
 	frost.BackgroundTransparency = transparency or 0.92
 	frost.BorderSizePixel = 0
-	frost.ZIndex = 3 -- FIXED: low ZIndex so content can sit above
+	frost.ZIndex = 3
+	frost.Active = false
 	frost.Parent = parent
 	addCorner(frost, 18)
 	return frost
@@ -150,7 +150,9 @@ function Library.new(config)
 	local self = setmetatable({}, Library)
 	self.Name = config.Name or "Sxngdu Hub"
 	self.Tabs = {}
+	self.TabOrder = {}
 	self.CurrentTab = nil
+	self.AltLockEnabled = true
 	self.Minimized = false
 	self.MouseUnlocked = true
 	self.Width = config.Width or 780
@@ -194,23 +196,29 @@ function Library.new(config)
 	background.Image = config.BackgroundImage or BACKGROUND_ID
 	background.ScaleType = Enum.ScaleType.Stretch
 	background.ImageTransparency = math.clamp(config.BackgroundTransparency or 0, 0, 1)
-	background.ZIndex = 1 -- FIXED: lowest
+	background.ZIndex = 1
+	background.Active = false
 	background.Parent = self.Window
 	self.Background = background
-
 	local backgroundShade = Instance.new("Frame")
 	backgroundShade.Name = "WindowBackgroundShade"
 	backgroundShade.Size = UDim2.fromScale(1, 1)
 	backgroundShade.BackgroundColor3 = Color3.fromRGB(3, 7, 16)
 	backgroundShade.BackgroundTransparency = math.clamp(config.BackgroundShadeTransparency or 0.70, 0, 1)
 	backgroundShade.BorderSizePixel = 0
-	backgroundShade.ZIndex = 2 -- FIXED
+	backgroundShade.ZIndex = 2
+	backgroundShade.Active = false
 	backgroundShade.Parent = self.Window
 	self.BackgroundShade = backgroundShade
 
 	addCorner(self.Window, 20)
 	addStroke(self.Window, Theme.Accent, 1.5, 0.4)
-	addFrost(self.Window, 0.94) -- ZIndex already set to 3 inside
+	-- frost บาง ๆ อยู่ใต้ UI เท่านั้น
+	local frost = addFrost(self.Window, 0.96)
+	if frost then
+		frost.ZIndex = 3
+		frost.Active = false
+	end
 
 	-- top accent glass bar
 	local glow = Instance.new("Frame")
@@ -218,7 +226,7 @@ function Library.new(config)
 	glow.BackgroundColor3 = Theme.Accent
 	glow.BackgroundTransparency = 0.15
 	glow.BorderSizePixel = 0
-	glow.ZIndex = 6 -- FIXED: above content panels
+	glow.ZIndex = 25
 	glow.Parent = self.Window
 	local glowGrad = Instance.new("UIGradient")
 	glowGrad.Color = ColorSequence.new({
@@ -236,7 +244,7 @@ function Library.new(config)
 	sidebar.BackgroundColor3 = Theme.Sidebar
 	sidebar.BackgroundTransparency = Theme.SidebarT
 	sidebar.BorderSizePixel = 0
-	sidebar.ZIndex = 5 -- FIXED: above background layers
+	sidebar.ZIndex = 20
 	sidebar.Parent = self.Window
 
 	local sideLine = Instance.new("Frame")
@@ -245,14 +253,12 @@ function Library.new(config)
 	sideLine.BackgroundColor3 = Theme.Accent
 	sideLine.BackgroundTransparency = 0.7
 	sideLine.BorderSizePixel = 0
-	sideLine.ZIndex = 5
 	sideLine.Parent = sidebar
 
 	local brand = Instance.new("Frame")
 	brand.Size = UDim2.new(1, -20, 0, 42)
 	brand.Position = UDim2.new(0, 10, 0, 14)
 	brand.BackgroundTransparency = 1
-	brand.ZIndex = 5
 	brand.Parent = sidebar
 
 	local brandLogo = Instance.new("ImageLabel")
@@ -261,7 +267,6 @@ function Library.new(config)
 	brandLogo.BackgroundTransparency = 1
 	brandLogo.Image = LOGO_ID
 	brandLogo.ScaleType = Enum.ScaleType.Fit
-	brandLogo.ZIndex = 5
 	brandLogo.Parent = brand
 
 	makeLabel(brand, "SXNGDU", UDim2.new(1, -40, 0, 18), UDim2.new(0, 40, 0, 4), Theme.Accent, Enum.Font.GothamBold, 14)
@@ -273,7 +278,6 @@ function Library.new(config)
 	avatarCard.BackgroundColor3 = Theme.BgCard
 	avatarCard.BackgroundTransparency = Theme.CardT
 	avatarCard.BorderSizePixel = 0
-	avatarCard.ZIndex = 5
 	avatarCard.Parent = sidebar
 	addCorner(avatarCard, 14)
 	addStroke(avatarCard, Theme.Accent, 1, 0.55)
@@ -284,7 +288,6 @@ function Library.new(config)
 	avatarFrame.BackgroundColor3 = Theme.BgPanel
 	avatarFrame.BackgroundTransparency = 0.35
 	avatarFrame.BorderSizePixel = 0
-	avatarFrame.ZIndex = 5
 	avatarFrame.Parent = avatarCard
 	addCorner(avatarFrame, 26)
 	addStroke(avatarFrame, Theme.Accent, 1.5, 0.3)
@@ -293,7 +296,6 @@ function Library.new(config)
 	avatar.Size = UDim2.new(1, -4, 1, -4)
 	avatar.Position = UDim2.new(0, 2, 0, 2)
 	avatar.BackgroundTransparency = 1
-	avatar.ZIndex = 5
 	pcall(function()
 		avatar.Image = Players:GetUserThumbnailAsync(
 			LocalPlayer.UserId,
@@ -309,7 +311,6 @@ function Library.new(config)
 	online.Position = UDim2.new(1, -12, 1, -12)
 	online.BackgroundColor3 = Theme.Green
 	online.BorderSizePixel = 0
-	online.ZIndex = 6
 	online.Parent = avatarFrame
 	addCorner(online, 6)
 	addStroke(online, Theme.BgCard, 2, 0)
@@ -322,7 +323,6 @@ function Library.new(config)
 		row.Size = UDim2.new(1, -20, 0, 20)
 		row.Position = UDim2.new(0, 10, 0, y)
 		row.BackgroundTransparency = 1
-		row.ZIndex = 5
 		row.Parent = sidebar
 		makeLabel(row, label, UDim2.new(0.42, 0, 1, 0), nil, Theme.TextDim, Enum.Font.Gotham, 11)
 		return makeLabel(row, value, UDim2.new(0.58, 0, 1, 0), UDim2.new(0.42, 0, 0, 0), Theme.Text, Enum.Font.GothamMedium, 11, Enum.TextXAlignment.Right)
@@ -363,7 +363,6 @@ function Library.new(config)
 	statusFrame.BackgroundColor3 = Theme.BgCard
 	statusFrame.BackgroundTransparency = Theme.CardT
 	statusFrame.BorderSizePixel = 0
-	statusFrame.ZIndex = 5
 	statusFrame.Parent = sidebar
 	addCorner(statusFrame, 10)
 	addStroke(statusFrame, Theme.Green, 1, 0.45)
@@ -373,7 +372,6 @@ function Library.new(config)
 	statusDot.Position = UDim2.new(0, 12, 0.5, -3.5)
 	statusDot.BackgroundColor3 = Theme.Green
 	statusDot.BorderSizePixel = 0
-	statusDot.ZIndex = 6
 	statusDot.Parent = statusFrame
 	addCorner(statusDot, 4)
 	makeLabel(statusFrame, "Connected", UDim2.new(1, -28, 1, 0), UDim2.new(0, 26, 0, 0), Theme.Green, Enum.Font.GothamMedium, 12)
@@ -393,7 +391,7 @@ function Library.new(config)
 	right.Size = UDim2.new(1, -218, 1, -3)
 	right.Position = UDim2.new(0, 214, 0, 3)
 	right.BackgroundTransparency = 1
-	right.ZIndex = 5 -- FIXED: above background layers
+	right.ZIndex = 20
 	right.Parent = self.Window
 
 	local titleBar = Instance.new("Frame")
@@ -401,7 +399,6 @@ function Library.new(config)
 	titleBar.BackgroundColor3 = Theme.BgPanel
 	titleBar.BackgroundTransparency = 0.55
 	titleBar.BorderSizePixel = 0
-	titleBar.ZIndex = 5
 	titleBar.Parent = right
 
 	local logoSmall = Instance.new("ImageLabel")
@@ -410,7 +407,6 @@ function Library.new(config)
 	logoSmall.BackgroundTransparency = 1
 	logoSmall.Image = LOGO_ID
 	logoSmall.ScaleType = Enum.ScaleType.Fit
-	logoSmall.ZIndex = 5
 	logoSmall.Parent = titleBar
 	makeLabel(titleBar, self.Name, UDim2.new(0.6, 0, 1, 0), UDim2.new(0, 42, 0, 0), Theme.Text, Enum.Font.GothamBold, 15)
 
@@ -424,7 +420,6 @@ function Library.new(config)
 	minBtn.Font = Enum.Font.GothamBold
 	minBtn.TextSize = 18
 	minBtn.AutoButtonColor = false
-	minBtn.ZIndex = 6
 	minBtn.Parent = titleBar
 	addCorner(minBtn, 10)
 	addStroke(minBtn, Theme.Stroke, 1, 0.4)
@@ -439,7 +434,6 @@ function Library.new(config)
 	close.Image = CLOSE_ID
 	close.ScaleType = Enum.ScaleType.Fit
 	close.AutoButtonColor = false
-	close.ZIndex = 6
 	close.Parent = titleBar
 	addCorner(close, 10)
 	addStroke(close, Theme.Red, 1, 0.45)
@@ -490,7 +484,6 @@ function Library.new(config)
 	self.TabBar.ScrollBarImageColor3 = Theme.Accent
 	self.TabBar.ScrollingDirection = Enum.ScrollingDirection.X
 	self.TabBar.CanvasSize = UDim2.new(0, 0, 0, 0)
-	self.TabBar.ZIndex = 5
 	self.TabBar.Parent = right
 
 	local tabLayout = Instance.new("UIListLayout")
@@ -507,7 +500,6 @@ function Library.new(config)
 	self.Content.Size = UDim2.new(1, -16, 1, -100)
 	self.Content.Position = UDim2.new(0, 8, 0, 92)
 	self.Content.BackgroundTransparency = 1
-	self.Content.ZIndex = 5
 	self.Content.Parent = right
 
 	local function makeResizeHandle(size, pos, edges)
@@ -516,7 +508,7 @@ function Library.new(config)
 		h.Position = pos
 		h.BackgroundTransparency = 1
 		h.Text = ""
-		h.ZIndex = 50
+		h.ZIndex = 60
 		h.Parent = self.Window
 		local resizing, startMouse, startSize, startPos = false, nil, nil, nil
 		h.InputBegan:Connect(function(input)
@@ -651,7 +643,9 @@ function Library.new(config)
 
 	UserInputService.InputBegan:Connect(function(input, gp)
 		if input.KeyCode == Enum.KeyCode.LeftAlt then
-			if self.MouseUnlocked then self:LockMouse() else self:UnlockMouse() end
+			if self.AltLockEnabled then
+				if self.MouseUnlocked then self:LockMouse() else self:UnlockMouse() end
+			end
 			return
 		end
 		if gp then return end
@@ -677,7 +671,6 @@ function Library.new(config)
 	homeCard.BackgroundColor3 = Theme.BgCard
 	homeCard.BackgroundTransparency = Theme.CardT
 	homeCard.BorderSizePixel = 0
-	homeCard.ZIndex = 5
 	homeCard.Parent = homeTab.Frame
 	addCorner(homeCard, 14)
 	addStroke(homeCard, Theme.Accent, 1.1, 0.4)
@@ -689,7 +682,6 @@ function Library.new(config)
 	homeLogo.BackgroundTransparency = 1
 	homeLogo.Image = LOGO_ID
 	homeLogo.ScaleType = Enum.ScaleType.Fit
-	homeLogo.ZIndex = 5
 	homeLogo.Parent = homeCard
 	makeLabel(homeCard, "SXNGDU HUB", UDim2.new(1, -90, 0, 24), UDim2.new(0, 82, 0, 28), Theme.Accent, Enum.Font.GothamBold, 18)
 	makeLabel(homeCard, "Glass Clear  ·  Scripts ready", UDim2.new(1, -90, 0, 18), UDim2.new(0, 82, 0, 56), Theme.TextDim, Enum.Font.Gotham, 12)
@@ -700,7 +692,6 @@ function Library.new(config)
 	badge.BackgroundColor3 = Color3.fromRGB(20, 50, 40)
 	badge.BackgroundTransparency = 0.25
 	badge.BorderSizePixel = 0
-	badge.ZIndex = 6
 	badge.Parent = homeCard
 	addCorner(badge, 8)
 	addStroke(badge, Theme.Green, 1, 0.4)
@@ -708,14 +699,59 @@ function Library.new(config)
 
 	self:CreateLabel(homeTab, "")
 	self:CreateLabel(homeTab, "QUICK ACTIONS")
+	self:CreateToggle(homeTab, "Alt ล็อกเมาส์ (LeftAlt)", true, function(on)
+		self.AltLockEnabled = on
+		if on then
+			self:Notify("Mouse", "เปิด LeftAlt ล็อก/ปลดเมาส์", 2)
+		else
+			self:UnlockMouse()
+			self:Notify("Mouse", "ปิดระบบ LeftAlt แล้ว", 2)
+		end
+	end)
 	self:CreateButton(homeTab, "  เริ่มใช้งาน", function()
-		self:Notify("Sxngdu", "พร้อมใช้งานแล้ว", 2)
+		local nextName = self:GetFirstFeatureTab()
+		if nextName then
+			self:SelectTab(nextName)
+			self:Notify("Sxngdu", "ไปที่แท็บ: " .. nextName, 2)
+		else
+			-- ยังไม่มีแท็บฟีเจอร์ — ลองแท็บถัดไปในลำดับหลัง Home
+			local found = false
+			for i, name in ipairs(self.TabOrder or {}) do
+				if name == "Home" and self.TabOrder[i + 1] then
+					local n = self.TabOrder[i + 1]
+					if n ~= "Credits" then
+						self:SelectTab(n)
+						self:Notify("Sxngdu", "ไปที่แท็บ: " .. n, 2)
+						found = true
+						break
+					elseif self.TabOrder[i + 2] then
+						self:SelectTab(self.TabOrder[i + 2])
+						self:Notify("Sxngdu", "ไปที่แท็บ: " .. self.TabOrder[i + 2], 2)
+						found = true
+						break
+					end
+				end
+			end
+			if not found then
+				self:Notify("Sxngdu", "พร้อมใช้งาน — เลือกแท็บด้านบนได้เลย", 2)
+			end
+		end
 	end)
 	self:CreateButton(homeTab, "  คัดลอก HWID", function()
 		local hwid = "N/A"
 		pcall(function() if gethwid then hwid = gethwid() end end)
-		if setclipboard then setclipboard(tostring(hwid)) end
+		if setclipboard then setclipboard(tostring(hwid))
+		elseif toclipboard then toclipboard(tostring(hwid)) end
 		self:Notify("HWID", "คัดลอกแล้ว", 2)
+	end)
+	self:CreateButton(homeTab, "  Discord", function()
+		local link = "https://discord.gg/zxeZfscCmj"
+		local ok = pcall(function()
+			if setclipboard then setclipboard(link)
+			elseif toclipboard then toclipboard(link)
+			else error("no clipboard") end
+		end)
+		self:Notify("Discord", ok and ("คัดลอกลิงก์แล้ว\n" .. link) or link, 4)
 	end)
 
 	self:CreateLabel(creditsTab, "DEVELOPER")
@@ -724,7 +760,6 @@ function Library.new(config)
 	credCard.BackgroundColor3 = Theme.BgCard
 	credCard.BackgroundTransparency = Theme.CardT
 	credCard.BorderSizePixel = 0
-	credCard.ZIndex = 5
 	credCard.Parent = creditsTab.Frame
 	addCorner(credCard, 14)
 	addStroke(credCard, Theme.Accent, 1, 0.5)
@@ -735,7 +770,6 @@ function Library.new(config)
 	credLogo.BackgroundTransparency = 1
 	credLogo.Image = LOGO_ID
 	credLogo.ScaleType = Enum.ScaleType.Fit
-	credLogo.ZIndex = 5
 	credLogo.Parent = credCard
 	makeLabel(credCard, "sxngdu", UDim2.new(1, -80, 0, 22), UDim2.new(0, 76, 0, 24), Theme.Text, Enum.Font.GothamBold, 16)
 	makeLabel(credCard, "Main Developer  ·  UI & Scripts", UDim2.new(1, -80, 0, 18), UDim2.new(0, 76, 0, 48), Theme.TextDim, Enum.Font.Gotham, 12)
@@ -743,8 +777,14 @@ function Library.new(config)
 	self:CreateLabel(creditsTab, "ABOUT")
 	self:CreateLabel(creditsTab, "Sxngdu Hub — Glass Clear Edition")
 	self:CreateLabel(creditsTab, "RightShift toggle  ·  LeftAlt mouse unlock")
-	self:CreateButton(creditsTab, "  Discord (soon)", function()
-		self:Notify("Discord", "กำลังเปิดเร็ว ๆ นี้", 2)
+	self:CreateButton(creditsTab, "  Discord", function()
+		local link = "https://discord.gg/zxeZfscCmj"
+		local ok = pcall(function()
+			if setclipboard then setclipboard(link)
+			elseif toclipboard then toclipboard(link)
+			else error("no clipboard") end
+		end)
+		self:Notify("Discord", ok and ("คัดลอกแล้ว\n" .. link) or link, 4)
 	end)
 
 	return self
@@ -760,7 +800,6 @@ function Library:CreateTab(name)
 	tab.Frame.Visible = false
 	tab.Frame.CanvasSize = UDim2.new(0, 0, 0, 0)
 	tab.Frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	tab.Frame.ZIndex = 5
 	tab.Frame.Parent = self.Content
 	addPadding(tab.Frame, 4, 8, 2, 6)
 
@@ -782,7 +821,6 @@ function Library:CreateTab(name)
 	btn.Font = Enum.Font.GothamMedium
 	btn.TextSize = 12
 	btn.AutoButtonColor = false
-	btn.ZIndex = 5
 	btn.Parent = self.TabBar
 	addCorner(btn, 9)
 	local btnStroke = addStroke(btn, Theme.Stroke, 1, 0.55)
@@ -809,6 +847,7 @@ function Library:CreateTab(name)
 	tab.Btn = btn
 	tab.Stroke = btnStroke
 	self.Tabs[name] = tab
+	table.insert(self.TabOrder, name)
 	if not self.CurrentTab then
 		tab.Frame.Visible = true
 		btn.BackgroundColor3 = Theme.AccentDim
@@ -821,13 +860,43 @@ function Library:CreateTab(name)
 	return tab
 end
 
+function Library:SelectTab(name)
+	local tab = self.Tabs[name]
+	if not tab then return false end
+	for _, t in pairs(self.Tabs) do
+		t.Frame.Visible = false
+		if t.Btn then
+			tween(t.Btn, {BackgroundColor3 = Theme.BgCard, BackgroundTransparency = Theme.CardT, TextColor3 = Theme.TextDim})
+		end
+		if t.Stroke then t.Stroke.Transparency = 0.55 end
+	end
+	tab.Frame.Visible = true
+	if tab.Btn then
+		tween(tab.Btn, {BackgroundColor3 = Theme.AccentDim, BackgroundTransparency = 0.15, TextColor3 = Theme.Text})
+	end
+	if tab.Stroke then
+		tab.Stroke.Color = Theme.Accent
+		tab.Stroke.Transparency = 0.15
+	end
+	self.CurrentTab = tab
+	return true
+end
+
+function Library:GetFirstFeatureTab()
+	for _, name in ipairs(self.TabOrder or {}) do
+		if name ~= "Home" and name ~= "Credits" then
+			return name
+		end
+	end
+	return nil
+end
+
 function Library:CreateToggle(tab, text, default, callback)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(1, -4, 0, 40)
 	frame.BackgroundColor3 = Theme.BgCard
 	frame.BackgroundTransparency = Theme.CardT
 	frame.BorderSizePixel = 0
-	frame.ZIndex = 5
 	frame.Parent = tab.Frame
 	addCorner(frame, 11)
 	addStroke(frame, Theme.Stroke, 1, 0.55)
@@ -841,7 +910,6 @@ function Library:CreateToggle(tab, text, default, callback)
 	sw.BackgroundTransparency = state and 0.15 or 0.25
 	sw.Text = ""
 	sw.AutoButtonColor = false
-	sw.ZIndex = 6
 	sw.Parent = frame
 	addCorner(sw, 13)
 	local swStroke = addStroke(sw, state and Theme.AccentGlow or Theme.Stroke, 1, state and 0.2 or 0.55)
@@ -850,7 +918,6 @@ function Library:CreateToggle(tab, text, default, callback)
 	circle.Size = UDim2.new(0, 20, 0, 20)
 	circle.Position = state and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
 	circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	circle.ZIndex = 7
 	circle.Parent = sw
 	addCorner(circle, 10)
 
@@ -888,7 +955,6 @@ function Library:CreateButton(tab, text, callback)
 	btn.Font = Enum.Font.GothamBold
 	btn.TextSize = 13
 	btn.AutoButtonColor = false
-	btn.ZIndex = 5
 	btn.Parent = tab.Frame
 	addCorner(btn, 11)
 	local st = addStroke(btn, Theme.Accent, 1.1, 0.35)
@@ -907,9 +973,7 @@ function Library:CreateButton(tab, text, callback)
 end
 
 function Library:CreateLabel(tab, text)
-	local lbl = makeLabel(tab.Frame, text, UDim2.new(1, -4, 0, 18), nil, Theme.TextDim, Enum.Font.GothamMedium, 11)
-	lbl.ZIndex = 5
-	return lbl
+	return makeLabel(tab.Frame, text, UDim2.new(1, -4, 0, 18), nil, Theme.TextDim, Enum.Font.GothamMedium, 11)
 end
 
 function Library:CreateTextbox(tab, placeholder, default, callback)
@@ -918,7 +982,6 @@ function Library:CreateTextbox(tab, placeholder, default, callback)
 	frame.BackgroundColor3 = Theme.BgCard
 	frame.BackgroundTransparency = Theme.CardT
 	frame.BorderSizePixel = 0
-	frame.ZIndex = 5
 	frame.Parent = tab.Frame
 	addCorner(frame, 11)
 	addStroke(frame, Theme.Stroke, 1, 0.5)
@@ -935,7 +998,6 @@ function Library:CreateTextbox(tab, placeholder, default, callback)
 	box.TextSize = 13
 	box.TextXAlignment = Enum.TextXAlignment.Left
 	box.ClearTextOnFocus = false
-	box.ZIndex = 5
 	box.Parent = frame
 	box.FocusLost:Connect(function()
 		if callback then callback(box.Text) end
@@ -949,14 +1011,12 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	frame.BackgroundColor3 = Theme.BgCard
 	frame.BackgroundTransparency = Theme.CardT
 	frame.BorderSizePixel = 0
-	frame.ZIndex = 5
 	frame.Parent = tab.Frame
 	addCorner(frame, 11)
 	addStroke(frame, Theme.Stroke, 1, 0.55)
 
 	local value = default or minV
 	local lbl = makeLabel(frame, text .. "  ·  " .. value, UDim2.new(1, -16, 0, 20), UDim2.new(0, 14, 0, 8), Theme.Text, Enum.Font.Gotham, 12)
-	lbl.ZIndex = 5
 
 	local bg = Instance.new("Frame")
 	bg.Size = UDim2.new(1, -28, 0, 7)
@@ -964,7 +1024,6 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	bg.BackgroundColor3 = Theme.ToggleOff
 	bg.BackgroundTransparency = 0.2
 	bg.BorderSizePixel = 0
-	bg.ZIndex = 5
 	bg.Parent = frame
 	addCorner(bg, 4)
 
@@ -973,7 +1032,6 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	fill.BackgroundColor3 = Theme.Slider
 	fill.BackgroundTransparency = 0.1
 	fill.BorderSizePixel = 0
-	fill.ZIndex = 5
 	fill.Parent = bg
 	addCorner(fill, 4)
 	addGradient(fill, Theme.AccentDim, Theme.AccentGlow, 0)
@@ -984,7 +1042,7 @@ function Library:CreateSlider(tab, text, minV, maxV, default, callback)
 	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	knob.Text = ""
 	knob.AutoButtonColor = false
-	knob.ZIndex = 6
+	knob.ZIndex = 2
 	knob.Parent = bg
 	addCorner(knob, 8)
 	addStroke(knob, Theme.Accent, 1.5, 0.15)
@@ -1050,7 +1108,6 @@ function Library:Notify(title, text, duration)
 	bar.Position = UDim2.new(0, 8, 0, 7)
 	bar.BackgroundColor3 = Theme.Accent
 	bar.BorderSizePixel = 0
-	bar.ZIndex = 201
 	bar.Parent = n
 	addCorner(bar, 2)
 	makeLabel(n, title, UDim2.new(1, -28, 0, 20), UDim2.new(0, 18, 0, 10), Theme.Accent, Enum.Font.GothamBold, 13)
